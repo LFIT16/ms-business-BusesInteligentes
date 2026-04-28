@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RutasModule } from './rutas/rutas.module';
+import { NodosModule } from './nodos/nodos.module';
 import { ParaderoModule } from './paradero/paradero.module';
 
 @Module({
@@ -20,6 +22,8 @@ import { ParaderoModule } from './paradero/paradero.module';
         synchronize: false, // Usaremos migraciones
       }),
     }),
+    RutasModule,
+    NodosModule,
     ParaderoModule,
   ],
 })
