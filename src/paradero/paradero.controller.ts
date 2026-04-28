@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ParaderoService } from './paradero.service';
 import { CreateParaderoDto } from './dto/create-paradero.dto';
 import { UpdateParaderoDto } from './dto/update-paradero.dto';
+import { BuscarCercanosDto } from './dto/buscar-cercanos.dto';
 
-@Controller('paradero')
+@Controller('/api/paraderos')
 export class ParaderoController {
   constructor(private readonly paraderoService: ParaderoService) {}
 
@@ -15,6 +16,12 @@ export class ParaderoController {
   @Get()
   findAll() {
     return this.paraderoService.findAll();
+  }
+
+  // HU-ENTR-2-002: Búsqueda de paraderos cercanos
+  @Get('cercanos')
+  buscarCercanos(@Query() dto: BuscarCercanosDto) {
+    return this.paraderoService.buscarCercanos(dto.lat, dto.lng);
   }
 
   @Get(':id')
