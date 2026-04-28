@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RutasModule } from './rutas/rutas.module';
+import { NodosModule } from './nodos/nodos.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         synchronize: false, // Usaremos migraciones
       }),
     }),
+    RutasModule,
+    NodosModule,
   ],
 })
 export class AppModule {}
