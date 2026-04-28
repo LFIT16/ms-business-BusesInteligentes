@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { Ruta } from 'src/rutas/entities/ruta.entity';
+import { Ruta } from '../..//rutas/entities/ruta.entity';
 //import { Paradero } from 'src/paraderos/entities/paradero.entity';
 
 @Entity('nodos')

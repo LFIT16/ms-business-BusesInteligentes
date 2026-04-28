@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { Nodo } from 'src/nodos/entities/nodo.entity';
+import { Nodo } from '../../nodos/entities/nodo.entity';
 
 @Entity('rutas')
 export class Ruta {
