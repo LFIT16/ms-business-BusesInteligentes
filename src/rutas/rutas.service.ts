@@ -37,7 +37,7 @@ export class RutasService {
   async findOne(id: number): Promise<Ruta> {
     const ruta = await this.rutasRepository.findOne({
       where: { id },
-      relations: ['nodos', 'nodos.paradero'],
+      relations: ['nodos'],
       order: {
         nodos: {
           orden: 'ASC',

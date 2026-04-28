@@ -51,7 +51,7 @@ export class NodosService {
 
   async findAll(): Promise<Nodo[]> {
     return await this.nodosRepository.find({
-      relations: ['ruta', 'paradero'],
+      relations: ['ruta'],
       order: {
         ruta: {
           id: 'ASC',
@@ -64,7 +64,7 @@ export class NodosService {
   async findOne(id: number): Promise<Nodo> {
     const nodo = await this.nodosRepository.findOne({
       where: { id },
-      relations: ['ruta', 'paradero'],
+      relations: ['ruta'],
     });
 
     if (!nodo) {
