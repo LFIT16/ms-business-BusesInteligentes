@@ -3,8 +3,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RutasModule } from './rutas/rutas.module';
 import { NodosModule } from './nodos/nodos.module';
+import { APP_GUARD } from '@nestjs/core';
+import { SecurityGuard } from './guards/security/security.guard';
 
 @Module({
+  providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({

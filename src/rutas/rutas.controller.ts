@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query,
+} from '@nestjs/common';
 import { RutasService } from './rutas.service';
 import { CreateRutaDto } from './dto/create-ruta.dto';
 import { UpdateRutaDto } from './dto/update-ruta.dto';
 
-@Controller('rutas')
+@Controller('/api/rutas')
 export class RutasController {
   constructor(private readonly rutasService: RutasService) {}
 
@@ -13,8 +14,8 @@ export class RutasController {
   }
 
   @Get()
-  findAll() {
-    return this.rutasService.findAll();
+  findAll(@Query('nombre') nombre?: string) {
+    return this.rutasService.findAll(nombre);
   }
 
   @Get(':id')

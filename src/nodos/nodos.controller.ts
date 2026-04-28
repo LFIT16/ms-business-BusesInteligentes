@@ -3,7 +3,7 @@ import { NodosService } from './nodos.service';
 import { CreateNodoDto } from './dto/create-nodo.dto';
 import { UpdateNodoDto } from './dto/update-nodo.dto';
 
-@Controller('nodos')
+@Controller('/api/nodos')
 export class NodosController {
   constructor(private readonly nodosService: NodosService) {}
 
