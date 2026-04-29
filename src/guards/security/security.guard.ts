@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger, ForbiddenException,} from '@nestjs/common';
 import axios from 'axios';
 
 @Injectable()
@@ -7,14 +7,17 @@ export class SecurityGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const { headers, url, method } = request;
+    const { headers, method } = request;
 
     if (!headers.authorization) {
       throw new UnauthorizedException('Token de autorización faltante');
     }
 
     const token = headers.authorization.replace('Bearer ', '');
-    const permissionData = { url, method };
+
+    const cleanUrl = request.path || request.url.split('?')[0];
+
+    const permissionData = {url: cleanUrl, method,};
 
     try {
       const securityUrl = `${process.env.MS_SECURITY}/api/public/security/permissions-validation`;
@@ -22,10 +25,16 @@ export class SecurityGuard implements CanActivate {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.data === true) return true;
-      else throw new UnauthorizedException('Permisos insuficientes');
-    } catch(error: any) {
+      if (response.data === true) {
+        return true;
+      }
+
+      throw new UnauthorizedException('Permisos insuficientes');
+    } catch (error: any) {
       this.logger.error(`Error al validar permisos: ${error.message}`);
+      if (error.response?.status === 403) {
+        throw new ForbiddenException('Permisos insuficientes');
+      }
       throw new UnauthorizedException('Error al validar permisos');
     }
   }
