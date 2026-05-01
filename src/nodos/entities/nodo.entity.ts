@@ -13,7 +13,6 @@ export class Nodo {
     @ManyToOne(() => Ruta, (ruta) => ruta.nodos)
     ruta?: Ruta;
 
-    
     @ManyToOne(() => Paradero, (paradero) => paradero.nodos, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'paradero_id' })
     paradero?: Paradero;

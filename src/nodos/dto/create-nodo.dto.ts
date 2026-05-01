@@ -1,6 +1,6 @@
 import { IsInt, IsNotEmpty, Min } from 'class-validator';
 import { Ruta } from 'src/rutas/entities/ruta.entity';
-//import { Paradero } from 'src/paraderos/entities/paradero.entity';
+import { Paradero } from 'src/paradero/entities/paradero.entity';
 
 export class CreateNodoDto {
   @IsInt()
@@ -10,6 +10,6 @@ export class CreateNodoDto {
   @IsNotEmpty()
   ruta?: Ruta;
 
-  //@IsNotEmpty()
-  //paradero?: Paradero;
+  @IsNotEmpty()
+  paradero?: Paradero;
 }

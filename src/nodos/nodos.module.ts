@@ -5,9 +5,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Ruta } from '../rutas/entities/ruta.entity';
 import { Nodo } from './entities/nodo.entity';
 import { RutasModule } from '../rutas/rutas.module';
+import { Paradero } from '../paradero/entities/paradero.entity';
+import { ParaderoModule } from '../paradero/paradero.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Ruta, Nodo]), RutasModule],
+  imports: [TypeOrmModule.forFeature([Ruta, Nodo, Paradero]), RutasModule, ParaderoModule],
   controllers: [NodosController],
   providers: [NodosService],
 })

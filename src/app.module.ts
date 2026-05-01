@@ -6,6 +6,7 @@ import { NodosModule } from './nodos/nodos.module';
 import { APP_GUARD } from '@nestjs/core';
 import { SecurityGuard } from './guards/security/security.guard';
 import { ParaderoModule } from './paradero/paradero.module';
+import { BusesModule } from './buses/buses.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -28,6 +29,7 @@ import { ParaderoModule } from './paradero/paradero.module';
     RutasModule,
     NodosModule,
     ParaderoModule,
+    BusesModule,
   ],
 })
 export class AppModule {}
