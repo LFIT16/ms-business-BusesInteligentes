@@ -17,18 +17,23 @@ export class NodosController {
     return this.nodosService.findAll();
   }
 
+  @Get('ruta/:id')
+  findByRuta(@Param('id') id: string) {
+    return this.nodosService.findByRuta(+id);
+  }
+
+  @Get('paradero/:id')
+  findByParadero(@Param('id') id: string) {
+    return this.nodosService.findByParadero(+id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.nodosService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateNodoDto: UpdateNodoDto) {
-    return this.nodosService.update(+id, updateNodoDto);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.nodosService.remove(+id);
+    return this.nodosService.remove (+id);
   }
 }

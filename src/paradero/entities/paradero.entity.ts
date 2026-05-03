@@ -28,6 +28,6 @@ export class Paradero {
   })
   clasificacion?: ClasificacionParadero;
 
- @OneToMany(() => Nodo, (nodo) => nodo.paradero)
-  nodos?: Nodo[];
+  @OneToMany(() => Nodo, (nodo) => nodo.paradero)
+    nodos?: Nodo[];
 }

@@ -10,7 +10,8 @@ export class Nodo {
     @Column()
     orden?: number;
 
-    @ManyToOne(() => Ruta, (ruta) => ruta.nodos)
+    @ManyToOne(() => Ruta, ruta => ruta.nodos, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'ruta_id' })
     ruta?: Ruta;
 
     @ManyToOne(() => Paradero, (paradero) => paradero.nodos, { onDelete: 'CASCADE' })

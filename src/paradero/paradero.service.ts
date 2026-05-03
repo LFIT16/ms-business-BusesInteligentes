@@ -54,10 +54,10 @@ export class ParaderoService {
     const cercanos = await this.paraderoRepository
       .createQueryBuilder('p')
       .select([
-        'p.id            AS id',
-        'p.nombre        AS nombre',
-        'p.latitud       AS latitud',
-        'p.longitud      AS longitud',
+        'p.id AS id',
+        'p.nombre AS nombre',
+        'p.latitud AS latitud',
+        'p.longitud AS longitud',
         'p.clasificacion AS clasificacion',
         `ROUND(
           6371000 * ACOS(
@@ -72,40 +72,13 @@ export class ParaderoService {
       .limit(LIMITE)
       .getRawMany();
 
-    const resultado = await Promise.all(
-      cercanos.map(async (p) => {
-        const conRutas = await this.paraderoRepository.findOne({
-          where: { id: p.id },
-          relations: ['nodos', 'nodos.ruta'],
-        });
-
-        if (!conRutas) throw new NotFoundException(`Paradero #${p.id} no encontrado`);
-
-        // const rutas = conRutas.nodos
-        //   ?.filter((nodo) => nodo.ruta)
-        //   .map((nodo) => ({
-        //     id: nodo.ruta.id,
-        //     nombre: nodo.ruta.nombre,
-        //     descripcion: nodo.ruta.descripcion,
-        //     tarifa: nodo.ruta.tarifa,
-        //     tiempoEstimadoTotal: nodo.ruta.tiempoEstimadoTotal,
-        //   }))
-        //   .filter((ruta, index, self) =>
-        //     index === self.findIndex((r) => r.id === ruta.id)
-        //   ) ?? [];
-
-        return {
-          id: p.id,
-          nombre: p.nombre,
-          latitud: Number(p.latitud),
-          longitud: Number(p.longitud),
-          clasificacion: p.clasificacion,
-          distancia_metros: Number(p.distancia_metros),
-         // rutas,
-        };
-      }),
-    );
-
-    return resultado;
+    return cercanos.map((p) => ({
+      id: Number(p.id),
+      nombre: p.nombre,
+      latitud: Number(p.latitud),
+      longitud: Number(p.longitud),
+      clasificacion: p.clasificacion,
+      distancia_metros: Number(p.distancia_metros),
+    }));
   }
 }

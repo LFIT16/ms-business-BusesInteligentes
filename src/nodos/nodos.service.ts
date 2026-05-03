@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Nodo } from './entities/nodo.entity';
 import { CreateNodoDto } from './dto/create-nodo.dto';
-import { UpdateNodoDto } from './dto/update-nodo.dto';
 import { RutasService } from '../rutas/rutas.service';
 import { ParaderoService } from 'src/paradero/paradero.service';
 
@@ -37,11 +36,15 @@ export class NodosService {
       throw new BadRequestException('paradero id is required');
     }
 
+    if (createNodoDto.orden === undefined || createNodoDto.orden === null) {
+      throw new BadRequestException('orden is required');
+    }
+
     const ruta = await this.rutasService.findOne(rutaId);
     const paradero = await this.paraderosService.findOne(paraderoId);
 
     const nodo = this.nodosRepository.create({
-      orden: createNodoDto.orden,
+      orden: Number(createNodoDto.orden),
       ruta,
       paradero,
     });
@@ -64,7 +67,7 @@ export class NodosService {
   async findOne(id: number): Promise<Nodo> {
     const nodo = await this.nodosRepository.findOne({
       where: { id },
-      relations: ['ruta'],
+      relations: ['ruta', 'paradero'],
     });
 
     if (!nodo) {
@@ -74,38 +77,39 @@ export class NodosService {
     return nodo;
   }
 
-  async update(id: number, updateNodoDto: UpdateNodoDto): Promise<Nodo> {
-    const nodo = await this.findOne(id);
+  async findByRuta(rutaId: number): Promise<Nodo[]> {
+    await this.rutasService.findOne(rutaId);
 
-    if (updateNodoDto.orden !== undefined) {
-      nodo.orden = updateNodoDto.orden;
-    }
+    return await this.nodosRepository.find({
+      where: {
+        ruta: {
+          id: rutaId,
+        },
+      },
+      relations: ['ruta', 'paradero'],
+      order: {
+        orden: 'ASC',
+      },
+    });
+  }
 
-    if (updateNodoDto.ruta) {
-      const rutaId = this.resolveId(updateNodoDto.ruta);
+  async findByParadero(paraderoId: number): Promise<Nodo[]> {
+    await this.paraderosService.findOne(paraderoId);
 
-      if (!rutaId) {
-        throw new BadRequestException('ruta id is required');
-      }
-
-      const ruta = await this.rutasService.findOne(rutaId);
-      nodo.ruta = ruta;
-    }
-
-    if (updateNodoDto.paradero) {
-      const paraderoId = this.resolveId(updateNodoDto.paradero);
-
-      if (!paraderoId) {
-        throw new BadRequestException('paradero id is required');
-      }
-
-      const paradero = await this.paraderosService.findOne(paraderoId);
-      nodo.paradero = paradero;
-    }
-
-    await this.nodosRepository.save(nodo);
-
-    return this.findOne(id);
+    return await this.nodosRepository.find({
+      where: {
+        paradero: {
+          id: paraderoId,
+        },
+      },
+      relations: ['ruta', 'paradero'],
+      order: {
+        ruta: {
+          id: 'ASC',
+        },
+        orden: 'ASC',
+      },
+    });
   }
 
   async remove(id: number) {
@@ -113,6 +117,8 @@ export class NodosService {
 
     await this.nodosRepository.remove(nodo);
 
-    return { message: `Nodo #${id} eliminado correctamente` };
+    return {
+      message: `Nodo #${id} eliminado correctamente`,
+    };
   }
 }
