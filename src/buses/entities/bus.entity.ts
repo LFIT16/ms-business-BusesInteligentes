@@ -31,7 +31,7 @@ export class Bus {
   })
   estado!: EstadoBus;
 
-  @Column({ nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   fotoUrl?: string;
 
   @Column({ unique: true })
