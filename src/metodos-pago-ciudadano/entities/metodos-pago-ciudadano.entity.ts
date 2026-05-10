@@ -1,13 +1,8 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany} from 'typeorm';
 
 import { Ciudadano } from '../../ciudadanos/entities/ciudadano.entity';
 import { MetodoPago } from '../../metodos-pago/entities/metodos-pago.entity';
+import { Recargas } from '../../recargas/entities/recargas.entity';
 
 @Entity('metodos_pago_ciudadano')
 export class MetodoPagoCiudadano {
@@ -16,6 +11,9 @@ export class MetodoPagoCiudadano {
 
   @Column({ name: 'numero_identificacion' })
   numeroIdentificacion?: string;
+
+  @Column({type: 'decimal', precision: 12, scale: 2, default: 0,})
+  saldo?: number;
 
   @Column({ default: true })
   activo?: boolean;
@@ -35,4 +33,7 @@ export class MetodoPagoCiudadano {
   )
   @JoinColumn({ name: 'metodo_pago_id' })
   metodoPago?: MetodoPago;
+
+  @OneToMany(() => Recargas, recarga => recarga.metodoPagoCiudadano)
+  recargas?: Recargas[];
 }

@@ -4,7 +4,7 @@ import { CiudadanosService } from './ciudadanos.service';
 import { CreateCiudadanoDto } from './dto/create-ciudadano.dto';
 import { UpdateCiudadanoDto } from './dto/update-ciudadano.dto';
 
-@Controller('ciudadanos')
+@Controller('/api/ciudadanos')
 export class CiudadanosController {
   constructor(private readonly ciudadanosService: CiudadanosService) {}
 

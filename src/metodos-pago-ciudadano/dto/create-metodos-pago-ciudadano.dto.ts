@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsOptional, IsString, } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, } from 'class-validator';
 
 export class CreateMetodosPagoCiudadanoDto {
   @IsInt({ message: 'El ciudadanoId debe ser un número entero' })
@@ -14,6 +14,11 @@ export class CreateMetodosPagoCiudadanoDto {
     message: 'El número de identificación del instrumento de pago es obligatorio',
   })
   numeroIdentificacion?: string;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  saldo?: number;
 
   @IsBoolean()
   @IsOptional()

@@ -4,7 +4,7 @@ import { MetodosPagoService } from './metodos-pago.service';
 import { CreateMetodosPagoDto } from './dto/create-metodos-pago.dto';
 import { UpdateMetodosPagoDto } from './dto/update-metodos-pago.dto';
 
-@Controller('metodos-pago')
+@Controller('/api/metodos-pago')
 export class MetodosPagoController {
   constructor(private readonly metodosPagoService: MetodosPagoService) {}
 

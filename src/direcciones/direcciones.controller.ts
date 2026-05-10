@@ -4,7 +4,7 @@ import { DireccionesService } from './direcciones.service';
 import { CreateDireccioneDto } from './dto/create-direccione.dto';
 import { UpdateDireccioneDto } from './dto/update-direccione.dto';
 
-@Controller('direcciones')
+@Controller('/api/direcciones')
 export class DireccionesController {
   constructor(private readonly direccionesService: DireccionesService) {}
 

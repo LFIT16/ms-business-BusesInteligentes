@@ -12,6 +12,7 @@ import { MetodoPago } from '../metodos-pago/entities/metodos-pago.entity';
 
 import { CreateMetodosPagoCiudadanoDto } from './dto/create-metodos-pago-ciudadano.dto';
 import { UpdateMetodosPagoCiudadanoDto } from './dto/update-metodos-pago-ciudadano.dto';
+import { TipoMetodoPago } from 'src/metodos-pago/enums/tipo-metodo-pago.enum';
 
 @Injectable()
 export class MetodosPagoCiudadanoService {
@@ -67,8 +68,8 @@ export class MetodosPagoCiudadanoService {
 
     const metodoPagoCiudadano =
       this.metodoPagoCiudadanoRepository.create({
-        numeroIdentificacion:
-          createMetodosPagoCiudadanoDto.numeroIdentificacion,
+        numeroIdentificacion:createMetodosPagoCiudadanoDto.numeroIdentificacion,
+        saldo: createMetodosPagoCiudadanoDto.saldo ?? 0,
         activo: createMetodosPagoCiudadanoDto.activo ?? true,
         ciudadano,
         metodoPago,
@@ -127,7 +128,21 @@ export class MetodosPagoCiudadanoService {
       relations: ['ciudadano', 'metodoPago'],
     });
   }
-
+  
+async findRecargablesByCiudadano(ciudadanoId: number): Promise<MetodoPagoCiudadano[]> {
+  return await this.metodoPagoCiudadanoRepository.find({
+    where: {
+      ciudadano: {
+        id: ciudadanoId,
+      },
+      activo: true,
+      metodoPago: {
+        tipo: TipoMetodoPago.RECARGABLE,
+      },
+    },
+    relations: ['ciudadano', 'metodoPago'],
+  });
+}
   async update(
     id: number,
     updateMetodosPagoCiudadanoDtoss: UpdateMetodosPagoCiudadanoDto,
@@ -141,6 +156,10 @@ export class MetodosPagoCiudadanoService {
 
     if (updateMetodosPagoCiudadanoDtoss.activo !== undefined) {
       metodoPagoCiudadano.activo = updateMetodosPagoCiudadanoDtoss.activo;
+    }
+
+    if (updateMetodosPagoCiudadanoDtoss.saldo !== undefined) {
+      metodoPagoCiudadano.saldo = updateMetodosPagoCiudadanoDtoss.saldo;
     }
 
     if (updateMetodosPagoCiudadanoDtoss.ciudadanoId !== undefined) {

@@ -13,7 +13,7 @@ import { MetodosPagoCiudadanoService } from './metodos-pago-ciudadano.service';
 import { CreateMetodosPagoCiudadanoDto } from './dto/create-metodos-pago-ciudadano.dto';
 import { UpdateMetodosPagoCiudadanoDto } from './dto/update-metodos-pago-ciudadano.dto';
 
-@Controller('metodos-pago-ciudadano')
+@Controller('/api/metodos-pago-ciudadano')
 export class MetodosPagoCiudadanoController {
   constructor(
     private readonly metodosPagoCiudadanoService: MetodosPagoCiudadanoService,
@@ -41,6 +41,15 @@ export class MetodosPagoCiudadanoController {
     @Param('ciudadanoId', ParseIntPipe) ciudadanoId: number,
   ) {
     return this.metodosPagoCiudadanoService.findActivosByCiudadano(
+      ciudadanoId,
+    );
+  }
+
+  @Get('ciudadano/:ciudadanoId/recargables')
+  findRecargablesByCiudadano(
+    @Param('ciudadanoId', ParseIntPipe) ciudadanoId: number,
+  ) {
+    return this.metodosPagoCiudadanoService.findRecargablesByCiudadano(
       ciudadanoId,
     );
   }
