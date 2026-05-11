@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe,Headers, } from '@nestjs/common';
 
 import { CiudadanosService } from './ciudadanos.service';
 import { CreateCiudadanoDto } from './dto/create-ciudadano.dto';
@@ -9,9 +9,13 @@ export class CiudadanosController {
   constructor(private readonly ciudadanosService: CiudadanosService) {}
 
   @Post()
-  create(@Body() createCiudadanoDto: CreateCiudadanoDto) {
-    return this.ciudadanosService.create(createCiudadanoDto);
+  create(
+    @Body() createCiudadanoDto: CreateCiudadanoDto,
+    @Headers('authorization') authorization: string,
+  ) {
+    return this.ciudadanosService.create(createCiudadanoDto, authorization);
   }
+
 
   @Get()
   findAll() {
@@ -21,6 +25,11 @@ export class CiudadanosController {
   @Get('usuario/:usuarioId')
   findByUsuarioId(@Param('usuarioId') usuarioId: string) {
     return this.ciudadanosService.findByUsuarioId(usuarioId);
+  }
+
+  @Post('usuario/:usuarioId/find-or-create')
+  findOrCreateByUsuarioId(@Param('usuarioId') usuarioId: string) {
+    return this.ciudadanosService.findOrCreateByUsuarioId(usuarioId);
   }
 
   @Get(':id')

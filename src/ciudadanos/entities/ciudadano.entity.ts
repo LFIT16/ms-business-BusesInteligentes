@@ -17,10 +17,10 @@ export class Ciudadano {
   @Column({ name: 'usuario_id', unique: true })
   usuarioId?: string;
 
-  @OneToOne(() => Direccion, direccion => direccion.ciudadano, {
+  @OneToMany(() => Direccion, direccion => direccion.ciudadano, {
     cascade: true,
   })
-  direccion?: Direccion;
+  direcciones?: Direccion[];
 
   @OneToMany(
     () => MetodoPagoCiudadano,

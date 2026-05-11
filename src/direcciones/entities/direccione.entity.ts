@@ -2,8 +2,8 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  OneToOne,
   JoinColumn,
+  ManyToOne,
 } from 'typeorm';
 
 import { Ciudadano } from '../../ciudadanos/entities/ciudadano.entity';
@@ -34,8 +34,8 @@ export class Direccion {
   @Column({ name: 'codigo_postal', nullable: true })
   codigoPostal?: string;
 
-  @OneToOne(() => Ciudadano, ciudadano => ciudadano.direccion, {
-    onDelete: 'CASCADE',
+  @ManyToOne(() => Ciudadano, ciudadano => ciudadano.direcciones, {
+  onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'ciudadano_id' })
   ciudadano?: Ciudadano;

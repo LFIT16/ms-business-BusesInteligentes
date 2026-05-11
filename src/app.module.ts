@@ -11,6 +11,7 @@ import { RecargasModule } from './recargas/recargas.module';
 import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
+import { DireccionesModule } from './direcciones/direcciones.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -38,6 +39,7 @@ import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pag
     MetodosPagoModule,
     MetodosPagoCiudadanoModule,
     RecargasModule,
+    DireccionesModule,
   ],
 })
 export class AppModule {}

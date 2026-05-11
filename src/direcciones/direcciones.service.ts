@@ -24,18 +24,11 @@ export class DireccionesService {
   async create(createDireccionDto: CreateDireccioneDto): Promise<Direccion> {
     const ciudadano = await this.ciudadanoRepository.findOne({
       where: { id: createDireccionDto.ciudadanoId },
-      relations: ['direccion'],
     });
 
     if (!ciudadano) {
       throw new NotFoundException(
         `No se encontró el ciudadano con id ${createDireccionDto.ciudadanoId}`,
-      );
-    }
-
-    if (ciudadano.direccion) {
-      throw new ConflictException(
-        'Este ciudadano ya tiene una dirección registrada',
       );
     }
 
