@@ -37,4 +37,7 @@ export class Bus {
   @Column({ unique: true })
   codigoQr?: string;
 
+  // ── Nuevo campo para tracking GPS ──────────────────────────────────
+  @Column({ default: false })
+  gpsActivo?: boolean;
 }

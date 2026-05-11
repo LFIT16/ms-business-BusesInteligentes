@@ -7,6 +7,10 @@ import { APP_GUARD } from '@nestjs/core';
 import { SecurityGuard } from './guards/security/security.guard';
 import { ParaderoModule } from './paradero/paradero.module';
 import { BusesModule } from './buses/buses.module';
+import { TurnosModule } from './turnos/turnos.module';
+import { ConductoresModule } from './conductores/conductores.module';
+import { ScheduleModule } from '@nestjs/schedule';
+
 import { RecargasModule } from './recargas/recargas.module';
 import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
@@ -29,12 +33,17 @@ import { DireccionesModule } from './direcciones/direcciones.module';
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Usaremos migraciones
+   
       }),
     }),
+    ScheduleModule.forRoot(), // ← añadir aquí
     RutasModule,
     NodosModule,
     ParaderoModule,
     BusesModule,
+    TurnosModule,
+    ConductoresModule,
+   
     CiudadanosModule,
     MetodosPagoModule,
     MetodosPagoCiudadanoModule,

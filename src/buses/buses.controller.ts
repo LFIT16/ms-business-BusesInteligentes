@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete , Query} from '@nestjs/common';
 import { BusesService } from './buses.service';
 import { CreateBusDto } from './dto/create-bus.dto';
 import { UpdateBusDto } from './dto/update-bus.dto';
+
+
 
 @Controller('/api/buses')
 export class BusesController {
@@ -12,10 +14,12 @@ export class BusesController {
     return this.busesService.create(createBusDto);
   }
 
-  @Get()
-  findAll() {
-    return this.busesService.findAll();
-  }
+ 
+
+ @Get()
+ findAll(@Query('placa') placa?: string) {
+  return this.busesService.findAll(placa);
+}
 
   @Get(':id')
   findOne(@Param('id') id: string) {
