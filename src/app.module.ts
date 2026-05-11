@@ -7,6 +7,10 @@ import { APP_GUARD } from '@nestjs/core';
 import { SecurityGuard } from './guards/security/security.guard';
 import { ParaderoModule } from './paradero/paradero.module';
 import { BusesModule } from './buses/buses.module';
+import { TurnosModule } from './turnos/turnos.module';
+import { ConductoresModule } from './conductores/conductores.module';
+import { ScheduleModule } from '@nestjs/schedule';
+
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -24,12 +28,17 @@ import { BusesModule } from './buses/buses.module';
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Usaremos migraciones
+   
       }),
     }),
+    ScheduleModule.forRoot(), // ← añadir aquí
     RutasModule,
     NodosModule,
     ParaderoModule,
     BusesModule,
+    TurnosModule,
+    ConductoresModule,
+   
   ],
 })
 export class AppModule {}
