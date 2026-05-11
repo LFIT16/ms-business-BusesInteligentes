@@ -8,6 +8,16 @@ export class SecurityGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const { headers, method } = request;
+    const cleanUrl = request.path || request.url.split('?')[0];
+
+    const publicRoutes = [
+      '/api/recargas/epayco/confirmacion',
+      '/api/recargas/epayco/respuesta',
+    ];
+
+    if (publicRoutes.includes(cleanUrl)) {
+      return true;
+    }
 
     if (!headers.authorization) {
       throw new UnauthorizedException('Token de autorización faltante');
@@ -15,7 +25,7 @@ export class SecurityGuard implements CanActivate {
 
     const token = headers.authorization.replace('Bearer ', '');
 
-    const cleanUrl = request.path || request.url.split('?')[0];
+    
 
     const permissionData = {url: cleanUrl, method,};
 

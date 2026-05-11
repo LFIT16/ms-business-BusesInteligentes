@@ -7,6 +7,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { SecurityGuard } from './guards/security/security.guard';
 import { ParaderoModule } from './paradero/paradero.module';
 import { BusesModule } from './buses/buses.module';
+import { RecargasModule } from './recargas/recargas.module';
+import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
+import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
+import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
+import { DireccionesModule } from './direcciones/direcciones.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -30,6 +35,11 @@ import { BusesModule } from './buses/buses.module';
     NodosModule,
     ParaderoModule,
     BusesModule,
+    CiudadanosModule,
+    MetodosPagoModule,
+    MetodosPagoCiudadanoModule,
+    RecargasModule,
+    DireccionesModule,
   ],
 })
 export class AppModule {}
