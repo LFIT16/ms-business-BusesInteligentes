@@ -16,6 +16,7 @@ import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
 import { DireccionesModule } from './direcciones/direcciones.module';
+import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-ruta.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -33,9 +34,12 @@ import { DireccionesModule } from './direcciones/direcciones.module';
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Usaremos migraciones
+     
+
    
       }),
     }),
+    ProgramacionesRutaModule,
     ScheduleModule.forRoot(), // ← añadir aquí
     RutasModule,
     NodosModule,
