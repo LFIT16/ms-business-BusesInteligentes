@@ -16,6 +16,8 @@ import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
 import { DireccionesModule } from './direcciones/direcciones.module';
+import { IncidentesBusModule } from './incidentes-bus/incidentes-bus.module';
+import { FotosModule } from './fotos/fotos.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -49,6 +51,8 @@ import { DireccionesModule } from './direcciones/direcciones.module';
     MetodosPagoCiudadanoModule,
     RecargasModule,
     DireccionesModule,
+    IncidentesBusModule,
+    FotosModule,
   ],
 })
 export class AppModule {}

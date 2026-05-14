@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { EstadoBus } from '../enums/estado-bus.enum';
+import { IncidentesBus } from '../../incidentes-bus/entities/incidentes-bus.entity';
 
 @Entity('buses')
 export class Bus {
@@ -40,4 +41,7 @@ export class Bus {
   // ── Nuevo campo para tracking GPS ──────────────────────────────────
   @Column({ default: false })
   gpsActivo?: boolean;
+
+  @OneToMany(() => IncidentesBus, incidenteBus => incidenteBus.bus)
+  incidentesBus?: IncidentesBus[];
 }
