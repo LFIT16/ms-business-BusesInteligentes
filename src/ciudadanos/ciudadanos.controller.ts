@@ -30,8 +30,8 @@ export class CiudadanosController {
   @Post('usuario/:usuarioId/find-or-create')
   findOrCreateByUsuarioId(@Param('usuarioId') usuarioId: string) {
     return this.ciudadanosService.findOrCreateByUsuarioId(usuarioId);
+  
   }
-
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.ciudadanosService.findOne(id);
@@ -49,4 +49,5 @@ export class CiudadanosController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.ciudadanosService.remove(id);
   }
+  
 }

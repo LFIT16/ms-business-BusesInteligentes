@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ProgramacionRuta } from '../programaciones-ruta/entities/programacion-ruta.entity';
+import { EstadoProgramacion } from '../programaciones-ruta/enums/estado-programacion.enum';
 import { Turno } from './entities/turno.entity';
 import { Bus } from '../buses/entities/bus.entity';
 import { CreateTurnoDto } from './dto/create-turno.dto';
@@ -22,6 +24,9 @@ export class TurnosService {
 
     @InjectRepository(Bus)
     private readonly busesRepository: Repository<Bus>,
+
+    @InjectRepository(ProgramacionRuta)
+    private readonly programacionRepo: Repository<ProgramacionRuta>,
   ) {}
 
   // ─── Helpers privados ───────────────────────────────────────────────────────
@@ -31,6 +36,32 @@ export class TurnosService {
     if (!turno) throw new NotFoundException(`Turno #${id} no encontrado`);
     return turno;
   }
+  /**
+ * Cambia el estado de las programaciones del bus
+ * cuya fechaSalida+horaSalida cae dentro del rango del turno.
+ */
+private async actualizarProgramacionesPorTurno(
+  busId: number,
+  horaInicio: Date,
+  horaFin: Date,
+  nuevoEstado: EstadoProgramacion,
+  estadoActual: EstadoProgramacion,
+): Promise<void> {
+  const programaciones = await this.programacionRepo
+    .createQueryBuilder('p')
+    .where('p.busId = :busId', { busId })
+    .andWhere('p.estado = :estado', { estado: estadoActual })
+    .getMany();
+
+  for (const prog of programaciones) {
+    // Convierte fechaSalida + horaSalida a Date para comparar
+    const fechaHora = new Date(`${prog.fechaSalida}T${prog.horaSalida}`);
+    if (fechaHora >= horaInicio && fechaHora <= horaFin) {
+      prog.estado = nuevoEstado;
+      await this.programacionRepo.save(prog);
+    }
+  }
+}
 
   private async findBusOrFail(id: number): Promise<Bus> {
     const bus = await this.busesRepository.findOne({ where: { id } });
@@ -198,6 +229,14 @@ export class TurnosService {
   await this.turnosRepository.save(turno);
 
   await this.busesRepository.update(turno.busId, { gpsActivo: true });
+  // ← AGREGAR: activa programaciones del bus dentro del rango del turno
+await this.actualizarProgramacionesPorTurno(
+  turno.busId,
+  turno.horaInicio,
+  turno.horaFin,
+  EstadoProgramacion.EN_CURSO,
+  EstadoProgramacion.PROGRAMADO,
+);
 
   return this.findOne(id);
 }
@@ -215,6 +254,14 @@ export class TurnosService {
 
     await this.busesRepository.update(turno.busId, { gpsActivo: false });
 
+    // ← AGREGAR: finaliza programaciones en curso del bus
+await this.actualizarProgramacionesPorTurno(
+  turno.busId,
+  turno.horaInicio,
+  turno.horaFin,
+  EstadoProgramacion.FINALIZADO,
+  EstadoProgramacion.EN_CURSO,
+);
     return this.findOne(id);
   }
 
@@ -237,21 +284,29 @@ export class TurnosService {
 
   // ─── Cron: auto-finaliza turnos vencidos cada minuto ────────────────────────
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  async finalizarTurnosVencidos(): Promise<void> {
-    const ahora = new Date();
+ @Cron(CronExpression.EVERY_MINUTE)
+async finalizarTurnosVencidos(): Promise<void> {
+  const ahora = new Date();
 
-    const turnosVencidos = await this.turnosRepository
-      .createQueryBuilder('t')
-      .where('t.estadoTurno = :estado', { estado: EstadoTurno.EN_CURSO })
-      .andWhere('t.horaFin < :ahora', { ahora })
-      .getMany();
+  const turnosVencidos = await this.turnosRepository
+    .createQueryBuilder('t')
+    .where('t.estadoTurno = :estado', { estado: EstadoTurno.EN_CURSO })
+    .andWhere('t.horaFin < :ahora', { ahora })
+    .getMany();
 
-    for (const turno of turnosVencidos) {
-      turno.estadoTurno = EstadoTurno.FINALIZADO;
-      turno.horaRealFin = ahora;  // ← mismo campo, consistente con finalización manual
-      await this.turnosRepository.save(turno);
-      await this.busesRepository.update(turno.busId, { gpsActivo: false });
-    }
+  for (const turno of turnosVencidos) {
+    turno.estadoTurno = EstadoTurno.FINALIZADO;
+    turno.horaRealFin = ahora;
+    await this.turnosRepository.save(turno);
+    await this.busesRepository.update(turno.busId, { gpsActivo: false });
+
+    // ← AGREGAR: finaliza las programaciones en curso del bus
+    await this.actualizarProgramacionesPorTurno(
+      turno.busId,
+      turno.horaInicio,
+      turno.horaFin,
+      EstadoProgramacion.FINALIZADO,
+      EstadoProgramacion.EN_CURSO,
+    );
   }
-}
+}}

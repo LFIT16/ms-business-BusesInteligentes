@@ -164,4 +164,5 @@ export class CiudadanosService {
       message: `Ciudadano con id ${id} eliminado correctamente`,
     };
   }
+  
 }

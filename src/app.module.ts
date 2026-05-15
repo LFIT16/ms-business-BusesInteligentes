@@ -17,6 +17,7 @@ import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
 import { DireccionesModule } from './direcciones/direcciones.module';
 import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-ruta.module';
+import { BoletosModule } from './boletos/boletos.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -53,6 +54,7 @@ import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-r
     MetodosPagoCiudadanoModule,
     RecargasModule,
     DireccionesModule,
+    BoletosModule,
   ],
 })
 export class AppModule {}
