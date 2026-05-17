@@ -16,6 +16,8 @@ import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
 import { MetodosPagoCiudadanoModule } from './metodos-pago-ciudadano/metodos-pago-ciudadano.module';
 import { DireccionesModule } from './direcciones/direcciones.module';
+import { IncidentesBusModule } from './incidentes-bus/incidentes-bus.module';
+import { FotosModule } from './fotos/fotos.module';
 import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-ruta.module';
 import { BoletosModule } from './boletos/boletos.module';
 
@@ -54,6 +56,8 @@ import { BoletosModule } from './boletos/boletos.module';
     MetodosPagoCiudadanoModule,
     RecargasModule,
     DireccionesModule,
+    IncidentesBusModule,
+    FotosModule,
     BoletosModule,
   ],
 })
