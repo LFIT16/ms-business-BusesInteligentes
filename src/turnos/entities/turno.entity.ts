@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDa
 import { Bus } from '../../buses/entities/bus.entity';
 import { EstadoTurno } from '../enums/estado-turno.enum';
 import { EstadoBus } from '../../buses/enums/estado-bus.enum';
+import { Conductore } from '../../conductores/entities/conductore.entity';
 
 @Entity('turnos')
 export class Turno {
@@ -10,6 +11,10 @@ export class Turno {
 
   @Column()
   conductorId!: number;
+
+  @ManyToOne(() => Conductore, { eager: true })
+  @JoinColumn({ name: 'conductorId' })
+  conductor!: Conductore;
 
   @ManyToOne(() => Bus, { eager: true })
   @JoinColumn({ name: 'busId' })

@@ -17,6 +17,9 @@ export class Ciudadano {
   @Column({ name: 'usuario_id', unique: true })
   usuarioId?: string;
 
+  @Column({ type: 'date', nullable: true })
+  fechaNacimiento?: Date | null;
+
   @OneToMany(() => Direccion, direccion => direccion.ciudadano, {
     cascade: true,
   })

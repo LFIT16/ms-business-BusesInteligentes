@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Headers,
   Query,
 } from '@nestjs/common';
 import { TurnosService } from './turnos.service';
@@ -72,4 +73,19 @@ export class TurnosController {
   findTurnoActivoConductor(@Param('conductorId', ParseIntPipe) conductorId: number) {
     return this.turnosService.findTurnoActivoConductor(conductorId);
   }
+
+  @Get('bus/:busId/en-fecha')
+findTurnoByBusAndFecha(
+  @Param('busId', ParseIntPipe) busId: number,
+  @Query('fecha') fecha: string,
+  @Headers('authorization') authorization: string,
+) {
+  return this.turnosService.findTurnoByBusAndFechaConUsuario(
+    busId,
+    fecha,
+    authorization,
+  );
+}
+
+  
 }

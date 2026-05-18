@@ -1,12 +1,14 @@
 import {
   Entity, Column, PrimaryGeneratedColumn,
   ManyToOne, JoinColumn, CreateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Ciudadano }            from '../../ciudadanos/entities/ciudadano.entity';
 import { ProgramacionRuta }     from '../../programaciones-ruta/entities/programacion-ruta.entity';
 import { MetodoPagoCiudadano }  from '../../metodos-pago-ciudadano/entities/metodos-pago-ciudadano.entity';
 import { Paradero }             from '../../paradero/entities/paradero.entity';
 import { EstadoBoleto }         from '../enums/estado-boleto.enum';
+import { Historial } from '../../historial/entities/historial.entity';
 
 @Entity('boletos')
 export class Boleto {
@@ -75,4 +77,7 @@ export class Boleto {
 
   @CreateDateColumn()
   creadoEn!: Date;
+
+  @OneToMany(() => Historial, historial => historial.boleto)
+  historial?: Historial[];
 }
