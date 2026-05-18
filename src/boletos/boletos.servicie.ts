@@ -15,6 +15,7 @@ import { DescensoBoletoDto } from './dto/descenso-boleto.dto';
 import { EstadoBoleto }      from './enums/estado-boleto.enum';
 import { EstadoProgramacion } from '../programaciones-ruta/enums/estado-programacion.enum';
 import { TipoMetodoPago }    from '../metodos-pago/enums/tipo-metodo-pago.enum';
+import { Between } from 'typeorm';
 
 @Injectable()
 export class BoletosService {
@@ -178,4 +179,51 @@ export class BoletosService {
       relations: ['ciudadano', 'paraderoAbordaje', 'paraderoDescenso'],
     });
   }
+  async ingresosPorMetodo(meses: number): Promise<any> {
+  const fechaInicio = new Date();
+  fechaInicio.setMonth(fechaInicio.getMonth() - meses);
+
+  const boletos = await this.boletoRepo.find({
+    where: {
+      estado: EstadoBoleto.COMPLETADO,
+      creadoEn: Between(fechaInicio, new Date()),
+    },
+    relations: ['metodoPagoCiudadano', 'metodoPagoCiudadano.metodoPago'],
+  });
+
+  // Agrupar por mes y tipo de método de pago
+  const resultado: Record<string, Record<string, number>> = {};
+
+  for (const boleto of boletos) {
+    const fecha = new Date(boleto.creadoEn);
+    const mes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+    const tipo = boleto.metodoPagoCiudadano?.metodoPago?.tipo ?? 'desconocido';
+    const monto = Number(boleto.montoTarifa ?? 0);
+
+    if (!resultado[mes]) resultado[mes] = {};
+    resultado[mes][tipo] = (resultado[mes][tipo] ?? 0) + monto;
+  }
+
+  // Ordenar por mes
+  const mesesOrdenados = Object.keys(resultado).sort();
+  const tiposUnicos = [...new Set(boletos.map(
+    b => b.metodoPagoCiudadano?.metodoPago?.tipo ?? 'desconocido'
+  ))];
+
+  // Total por método
+  const totalesPorMetodo: Record<string, number> = {};
+  for (const tipo of tiposUnicos) {
+    totalesPorMetodo[tipo] = mesesOrdenados.reduce(
+      (acc, mes) => acc + (resultado[mes][tipo] ?? 0), 0
+    );
+  }
+
+  return {
+    meses: mesesOrdenados,
+    tipos: tiposUnicos,
+    datos: resultado,
+    totalesPorMetodo,
+    totalGeneral: Object.values(totalesPorMetodo).reduce((a, b) => a + b, 0),
+  };
+}
 }

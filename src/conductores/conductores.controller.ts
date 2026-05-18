@@ -48,4 +48,8 @@ export class ConductoresController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.conductoresService.remove(id);
   }
+  @Get('by-usuario/:userId')
+findByUsuarioId(@Param('userId') userId: string) {
+  return this.conductoresService.findByUsuarioId(userId);
+}
 }

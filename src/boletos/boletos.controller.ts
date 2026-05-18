@@ -4,6 +4,7 @@ import {
 import { BoletosService }    from './boletos.servicie';
 import { CreateBoletoDto }   from './dto/create- boleto.dto';
 import { DescensoBoletoDto } from './dto/descenso-boleto.dto';
+import { Query } from '@nestjs/common';
 
 @Controller('/api/boletos')
 export class BoletosController {
@@ -45,4 +46,9 @@ export class BoletosController {
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
+  /** GET /api/boletos/reportes/ingresos-por-metodo?meses=3 */
+@Get('reportes/ingresos-por-metodo')
+ingresosPorMetodo(@Query('meses') meses: string) {
+  return this.service.ingresosPorMetodo(Number(meses) || 6);
+}
 }

@@ -98,4 +98,7 @@ export class ConductoresService {
     await this.conductoresRepository.remove(conductor);
     return { message: `Conductor #${id} eliminado correctamente` };
   }
+  async findByUsuarioId(userId: string): Promise<Conductore | null> {
+  return this.conductoresRepository.findOne({ where: { userId } });
+}
 }
