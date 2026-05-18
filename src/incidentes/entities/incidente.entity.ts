@@ -25,6 +25,24 @@ export class Incidente {
   @Column({ nullable: true })
   turnoId!: number;
 
+  @Column({ nullable: true })
+  gpsId!: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 7,
+    nullable: true,
+    default: null,
+  })
+  latitud!: number | null;
+
+  @Column({ type: 'decimal', precision: 10, scale: 7, nullable: true, default: null,})
+  longitud!: number | null;
+
+  @Column({ type: 'timestamp', nullable: true, default: null, })
+  fechaGps!: Date | null;
+
   @Column({ type: 'enum', enum: EstadoIncidente, default: EstadoIncidente.PENDIENTE })
   estado!: EstadoIncidente;
 

@@ -1,6 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, OneToOne } from 'typeorm';
 import { EstadoBus } from '../enums/estado-bus.enum';
 import { IncidentesBus } from '../../incidentes-bus/entities/incidentes-bus.entity';
+import { Gps } from '../../gps/entities/gps.entity';
+
 
 @Entity('buses')
 export class Bus {
@@ -44,4 +46,7 @@ export class Bus {
 
   @OneToMany(() => IncidentesBus, incidenteBus => incidenteBus.bus)
   incidentesBus?: IncidentesBus[];
+
+  @OneToOne(() => Gps, gps => gps.bus)
+  gps!: Gps;
 }

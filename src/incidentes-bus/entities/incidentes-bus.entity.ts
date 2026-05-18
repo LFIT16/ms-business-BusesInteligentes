@@ -12,14 +12,21 @@ import {
 
 import { Bus } from '../../buses/entities/bus.entity';
 import { Foto } from '../../fotos/entities/foto.entity';
+import { Incidente } from '../../incidentes/entities/incidente.entity';
 
 @Entity('incidentes_bus')
 export class IncidentesBus {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @Column({ name: 'incidente_id' })
+   @Column({ name: 'incidente_id' })
   incidenteId?: number;
+
+  @ManyToOne(() => Incidente, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'incidente_id' })
+  incidente?: Incidente;
 
   @Column({ name: 'bus_id' })
   busId?: number;
