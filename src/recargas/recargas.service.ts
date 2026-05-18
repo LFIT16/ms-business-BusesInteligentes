@@ -208,4 +208,24 @@ export class RecargasService {
 
     return res.redirect(`${frontendUrl}/#/recargas/list`);
   }
+
+  async findByCiudadano(ciudadanoId: number) {
+    return await this.recargasRepository.find({
+      where: {
+        metodoPagoCiudadano: {
+          ciudadano: {
+            id: ciudadanoId,
+          },
+        },
+      },
+      relations: [
+        'metodoPagoCiudadano',
+        'metodoPagoCiudadano.ciudadano',
+        'metodoPagoCiudadano.metodoPago',
+      ],
+      order: {
+        id: 'DESC',
+      },
+    });
+  }
 }

@@ -10,6 +10,7 @@ import { ProgramacionRuta } from '../programaciones-ruta/entities/programacion-r
 import { EstadoProgramacion } from '../programaciones-ruta/enums/estado-programacion.enum';
 import { Turno } from './entities/turno.entity';
 import { Bus } from '../buses/entities/bus.entity';
+import axios from 'axios';;
 import { CreateTurnoDto } from './dto/create-turno.dto';
 import { UpdateTurnoDto } from './dto/update-turno.dto';
 import { IniciarTurnoDto } from './dto/iniciar-turno.dto';
@@ -27,6 +28,7 @@ export class TurnosService {
 
     @InjectRepository(ProgramacionRuta)
     private readonly programacionRepo: Repository<ProgramacionRuta>,
+
   ) {}
 
   // ─── Helpers privados ───────────────────────────────────────────────────────
@@ -285,28 +287,112 @@ await this.actualizarProgramacionesPorTurno(
   // ─── Cron: auto-finaliza turnos vencidos cada minuto ────────────────────────
 
  @Cron(CronExpression.EVERY_MINUTE)
-async finalizarTurnosVencidos(): Promise<void> {
-  const ahora = new Date();
+  async finalizarTurnosVencidos(): Promise<void> {
+    const ahora = new Date();
 
-  const turnosVencidos = await this.turnosRepository
-    .createQueryBuilder('t')
-    .where('t.estadoTurno = :estado', { estado: EstadoTurno.EN_CURSO })
-    .andWhere('t.horaFin < :ahora', { ahora })
-    .getMany();
+    const turnosVencidos = await this.turnosRepository
+      .createQueryBuilder('t')
+      .where('t.estadoTurno = :estado', { estado: EstadoTurno.EN_CURSO })
+      .andWhere('t.horaFin < :ahora', { ahora })
+      .getMany();
 
-  for (const turno of turnosVencidos) {
-    turno.estadoTurno = EstadoTurno.FINALIZADO;
-    turno.horaRealFin = ahora;
-    await this.turnosRepository.save(turno);
-    await this.busesRepository.update(turno.busId, { gpsActivo: false });
+    for (const turno of turnosVencidos) {
+      turno.estadoTurno = EstadoTurno.FINALIZADO;
+      turno.horaRealFin = ahora;
+      await this.turnosRepository.save(turno);
+      await this.busesRepository.update(turno.busId, { gpsActivo: false });
 
-    // ← AGREGAR: finaliza las programaciones en curso del bus
-    await this.actualizarProgramacionesPorTurno(
-      turno.busId,
-      turno.horaInicio,
-      turno.horaFin,
-      EstadoProgramacion.FINALIZADO,
-      EstadoProgramacion.EN_CURSO,
-    );
+      // ← AGREGAR: finaliza las programaciones en curso del bus
+      await this.actualizarProgramacionesPorTurno(
+        turno.busId,
+        turno.horaInicio,
+        turno.horaFin,
+        EstadoProgramacion.FINALIZADO,
+        EstadoProgramacion.EN_CURSO,
+      );
+    }
+
   }
-}}
+  async findTurnoActualByBus(busId: number): Promise<Turno | null> {
+    const ahora = new Date();
+
+    return await this.turnosRepository
+      .createQueryBuilder('turno')
+      .leftJoinAndSelect('turno.bus', 'bus')
+      .leftJoinAndSelect('turno.conductor', 'conductor')
+      .where('turno.busId = :busId', { busId })
+      .andWhere('turno.horaInicio <= :ahora', { ahora })
+      .andWhere('turno.horaFin >= :ahora', { ahora })
+      .orderBy('turno.horaInicio', 'DESC')
+      .getOne();
+  }
+
+  async findTurnoByBusAndFechaConUsuario( busId: number, fecha: string,authorization?: string,): Promise<any> {
+    const fechaSql = new Date(fecha).toISOString().slice(0, 10);
+
+    const [turno] = await this.turnosRepository.query(
+      `
+      SELECT
+        t.id,
+        t.conductorId,
+        t.busId,
+        t.horaInicio,
+        t.horaFin,
+        t.estadoTurno,
+        t.estadoBus,
+        c.userId,
+        c.licencia,
+        c.telefono
+      FROM turnos t
+      JOIN conductores c ON c.id = t.conductorId
+      WHERE t.busId = ?
+        AND DATE(t.horaInicio) <= ?
+        AND DATE(t.horaFin) >= ?
+      ORDER BY t.id DESC
+      LIMIT 1
+      `,
+      [busId, fechaSql, fechaSql],
+    );
+
+    if (!turno) return null;
+
+    let nombre = turno.licencia || turno.userId;
+
+    try {
+      const securityUrl = process.env.MS_SECURITY_URL || 'http://localhost:8080';
+
+      const { data } = await axios.get(
+        `${securityUrl}/api/users/${turno.userId}`,
+        {
+          headers: authorization
+            ? { Authorization: authorization }
+            : {},
+        },
+      );
+
+      const user = data?.data?.user || data?.data || data?.user || data;
+      nombre = user?.name || user?.nombre || user?.email || nombre;
+    } catch (error: any) {
+      console.error(
+        'No se pudo consultar el usuario conductor:',
+        error?.response?.data || error?.message,
+      );
+    }
+
+    return {
+      id: turno.id,
+      conductorId: turno.conductorId,
+      busId: turno.busId,
+      horaInicio: turno.horaInicio,
+      horaFin: turno.horaFin,
+      estadoTurno: turno.estadoTurno,
+      estadoBus: turno.estadoBus,
+      conductor: {
+        userId: turno.userId,
+        licencia: turno.licencia,
+        telefono: turno.telefono,
+        nombre,
+      },
+    };
+  }
+}

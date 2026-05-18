@@ -20,6 +20,8 @@ import { IncidentesBusModule } from './incidentes-bus/incidentes-bus.module';
 import { FotosModule } from './fotos/fotos.module';
 import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-ruta.module';
 import { BoletosModule } from './boletos/boletos.module';
+import { HistorialModule } from './historial/historial.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
@@ -59,6 +61,8 @@ import { BoletosModule } from './boletos/boletos.module';
     IncidentesBusModule,
     FotosModule,
     BoletosModule,
+    HistorialModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}
