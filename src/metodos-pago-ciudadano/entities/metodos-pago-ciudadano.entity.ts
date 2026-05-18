@@ -9,7 +9,7 @@ export class MetodoPagoCiudadano {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @Column({ name: 'numero_identificacion' })
+  @Column({name: 'numero_identificacion',unique: true,})
   numeroIdentificacion?: string;
 
   @Column({type: 'decimal', precision: 12, scale: 2, default: 0,})

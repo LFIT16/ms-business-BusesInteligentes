@@ -60,19 +60,22 @@ export class HistorialService {
     return await this.historialRepository.save(historial);
   }
 
-  async findAll(): Promise<Historial[]> {
-    return await this.historialRepository.find({
-      relations: [
-        'boleto',
-        'nodo',
-        'nodo.ruta',
-        'nodo.paradero',
-      ],
-      order: {
-        fechaValidacion: 'DESC',
-      },
-    });
-  }
+  async findAll() {
+  return await this.historialRepository.find({
+    relations: [
+      'boleto',
+      'boleto.ciudadano',
+      'boleto.programacionRuta',
+      'boleto.programacionRuta.ruta',
+      'nodo',
+      'nodo.ruta',
+      'nodo.paradero',
+    ],
+    order: {
+      fechaValidacion: 'DESC',
+    },
+  });
+}
 
   async findOne(id: number): Promise<Historial> {
     const historial = await this.historialRepository.findOne({
@@ -180,5 +183,29 @@ export class HistorialService {
     return {
       message: `Historial #${id} eliminado correctamente`,
     };
+  }
+
+  async findByCiudadano(ciudadanoId: number) {
+    return await this.historialRepository.find({
+      where: {
+        boleto: {
+          ciudadano: {
+            id: ciudadanoId,
+          },
+        },
+      },
+      relations: [
+        'boleto',
+        'boleto.ciudadano',
+        'boleto.programacionRuta',
+        'boleto.programacionRuta.ruta',
+        'nodo',
+        'nodo.ruta',
+        'nodo.paradero',
+      ],
+      order: {
+        fechaValidacion: 'DESC',
+      },
+    });
   }
 }

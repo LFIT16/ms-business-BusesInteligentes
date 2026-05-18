@@ -54,4 +54,11 @@ export class HistorialController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.historialService.remove(id);
   }
+
+  @Get('ciudadano/:ciudadanoId')
+  findByCiudadano(
+    @Param('ciudadanoId', ParseIntPipe) ciudadanoId: number,
+  ) {
+    return this.historialService.findByCiudadano(ciudadanoId);
+  }
 }
