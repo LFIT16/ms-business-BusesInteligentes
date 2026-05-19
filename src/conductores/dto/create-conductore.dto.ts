@@ -1,6 +1,8 @@
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString, // Importante: usaremos validación de cadena
@@ -34,4 +36,9 @@ export class CreateConductoreDto {
   @IsBoolean()
   @IsOptional()
   activo?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  empresaId!: number;
 }

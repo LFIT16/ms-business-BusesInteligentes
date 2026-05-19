@@ -327,8 +327,11 @@ await this.actualizarProgramacionesPorTurno(
       .getOne();
   }
 
-  async findTurnoByBusAndFechaConUsuario( busId: number, fecha: string,authorization?: string,): Promise<any> {
-    const fechaSql = new Date(fecha).toISOString().slice(0, 10);
+  async findTurnoByBusAndFechaConUsuario( busId: number, fecha: string, authorization?: string,): Promise<any> {
+    const fechaColombia = this.convertirFechaUtcAColombia(fecha);
+    console.log('Fecha recibida:', fecha);
+console.log('Fecha Colombia:', fechaColombia);
+console.log('Bus:', busId);
 
     const [turno] = await this.turnosRepository.query(
       `
@@ -346,12 +349,11 @@ await this.actualizarProgramacionesPorTurno(
       FROM turnos t
       JOIN conductores c ON c.id = t.conductorId
       WHERE t.busId = ?
-        AND DATE(t.horaInicio) <= ?
-        AND DATE(t.horaFin) >= ?
+        AND ? BETWEEN t.horaInicio AND t.horaFin
       ORDER BY t.id DESC
       LIMIT 1
       `,
-      [busId, fechaSql, fechaSql],
+      [busId, fechaColombia],
     );
 
     if (!turno) return null;
@@ -371,7 +373,12 @@ await this.actualizarProgramacionesPorTurno(
       );
 
       const user = data?.data?.user || data?.data || data?.user || data;
-      nombre = user?.name || user?.nombre || user?.email || nombre;
+
+      nombre =
+        user?.name ||
+        user?.nombre ||
+        user?.email ||
+        nombre;
     } catch (error: any) {
       console.error(
         'No se pudo consultar el usuario conductor:',
@@ -388,11 +395,29 @@ await this.actualizarProgramacionesPorTurno(
       estadoTurno: turno.estadoTurno,
       estadoBus: turno.estadoBus,
       conductor: {
+        id: turno.conductorId,
         userId: turno.userId,
         licencia: turno.licencia,
         telefono: turno.telefono,
         nombre,
       },
     };
+  }
+
+  private convertirFechaUtcAColombia(fecha: string | Date): string {
+    const date = new Date(fecha);
+
+    const colombiaDate = new Date(
+      date.getTime() - 5 * 60 * 60 * 1000,
+    );
+
+    const year = colombiaDate.getUTCFullYear();
+    const month = String(colombiaDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(colombiaDate.getUTCDate()).padStart(2, '0');
+    const hours = String(colombiaDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(colombiaDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(colombiaDate.getUTCSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 }

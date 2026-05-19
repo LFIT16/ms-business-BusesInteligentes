@@ -3,7 +3,11 @@ import {
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+
+import { Empresa } from '../../empresas/entities/empresa.entity';
 
 @Entity('conductores')
 export class Conductore {
@@ -29,4 +33,14 @@ export class Conductore {
 
   @CreateDateColumn()
   creadoEn?: Date;
+
+  @Column({ name: 'empresa_id', nullable: true })
+empresaId?: number;
+
+  @ManyToOne(() => Empresa, empresa => empresa.conductores, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'empresa_id' })
+  empresa?: Empresa;
 }

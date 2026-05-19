@@ -1,7 +1,8 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, OneToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany, OneToOne, ManyToOne, JoinColumn } from 'typeorm';
 import { EstadoBus } from '../enums/estado-bus.enum';
 import { IncidentesBus } from '../../incidentes-bus/entities/incidentes-bus.entity';
 import { Gps } from '../../gps/entities/gps.entity';
+import { Empresa } from '../../empresas/entities/empresa.entity';
 
 
 @Entity('buses')
@@ -49,4 +50,14 @@ export class Bus {
 
   @OneToOne(() => Gps, gps => gps.bus)
   gps!: Gps;
+
+  @Column({ name: 'empresa_id', nullable: true })
+  empresaId?: number;
+
+  @ManyToOne(() => Empresa, empresa => empresa.buses, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  @JoinColumn({ name: 'empresa_id' })
+  empresa?: Empresa;
 }

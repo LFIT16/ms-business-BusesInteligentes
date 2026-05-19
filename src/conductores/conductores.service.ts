@@ -20,10 +20,15 @@ export class ConductoresService {
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   private async findOrFail(id: number): Promise<Conductore> {
-    const conductor = await this.conductoresRepository.findOne({ where: { id } });
+    const conductor = await this.conductoresRepository.findOne({
+      where: { id },
+      relations: ['empresa'],
+    });
+
     if (!conductor) {
       throw new NotFoundException(`Conductor #${id} no encontrado`);
     }
+
     return conductor;
   }
 
@@ -50,6 +55,7 @@ export class ConductoresService {
 
     const conductor = this.conductoresRepository.create({
       ...dto,
+      empresaId: dto.empresaId ?? null,
       fechaVencimientoLicencia: dto.fechaVencimientoLicencia
         ? new Date(dto.fechaVencimientoLicencia)
         : null,
@@ -61,6 +67,7 @@ export class ConductoresService {
 
   async findAll(): Promise<Conductore[]> {
     return this.conductoresRepository.find({
+      relations: ['empresa'],
       order: { id: 'ASC' },
     });
   }
@@ -85,6 +92,10 @@ export class ConductoresService {
 
     Object.assign(conductor, {
       ...dto,
+      empresaId:
+        dto.empresaId !== undefined
+          ? dto.empresaId
+          : conductor.empresaId,
       fechaVencimientoLicencia: dto.fechaVencimientoLicencia
         ? new Date(dto.fechaVencimientoLicencia)
         : conductor.fechaVencimientoLicencia,
@@ -99,6 +110,9 @@ export class ConductoresService {
     return { message: `Conductor #${id} eliminado correctamente` };
   }
   async findByUsuarioId(userId: string): Promise<Conductore | null> {
-  return this.conductoresRepository.findOne({ where: { userId } });
-}
+    return this.conductoresRepository.findOne({
+      where: { userId },
+      relations: ['empresa'],
+    });
+  }
 }

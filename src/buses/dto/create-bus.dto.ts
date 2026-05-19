@@ -45,4 +45,9 @@ export class CreateBusDto {
   @IsOptional()
   @IsString()
   fotoUrl?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  empresaId!: number;
 }

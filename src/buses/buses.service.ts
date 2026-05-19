@@ -32,6 +32,7 @@ export class BusesService {
 
     const bus = this.busesRepository.create({
       ...createBusDto,
+      empresaId: createBusDto.empresaId ?? null,
       codigoQr: this.generarCodigoQr(createBusDto.placa),
     });
 
@@ -45,6 +46,7 @@ export class BusesService {
 
     return await this.busesRepository.find({
       where,
+      relations: ['empresa'],
       order: {
         id: 'ASC',
       },
@@ -54,6 +56,7 @@ export class BusesService {
   async findOne(id: number): Promise<Bus> {
     const bus = await this.busesRepository.findOne({
       where: { id },
+      relations: ['empresa'],
     });
 
     if (!bus) {
@@ -81,7 +84,13 @@ export class BusesService {
       capacidadParados,
     );
 
-    Object.assign(bus, updateBusDto);
+    Object.assign(bus, {
+      ...updateBusDto,
+      empresaId:
+        updateBusDto.empresaId !== undefined
+          ? updateBusDto.empresaId
+          : bus.empresaId,
+    });
 
     return await this.busesRepository.save(bus);
   }
