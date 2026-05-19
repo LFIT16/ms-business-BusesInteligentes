@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, Repository } from 'typeorm';
+import { Between, DataSource, Repository } from 'typeorm';
 
 import { Boleto } from '../boletos/entities/boleto.entity';
 import { Ruta } from '../rutas/entities/ruta.entity';
@@ -27,6 +27,8 @@ export class ReportesService {
 
     @InjectRepository(Ruta)
     private readonly rutasRepository: Repository<Ruta>,
+
+    private readonly dataSource: DataSource,
   ) {}
 
   async getDistribucionRangosEtarios(filtros: FiltrosRangosEtarios) {
@@ -76,6 +78,166 @@ export class ReportesService {
       data,
       filtros,
       rutas,
+    };
+  }
+
+  async getTendenciaIncidentes(
+    meses: number = 3,
+    empresaId?: number,
+  ): Promise<any> {
+    const cantidadMeses = Math.max(Number(meses || 3), 3);
+
+    const hoy = new Date();
+    const mesesLista: string[] = [];
+
+    for (let i = cantidadMeses - 1; i >= 0; i--) {
+      const fecha = new Date(
+        hoy.getFullYear(),
+        hoy.getMonth() - i,
+        1,
+      );
+
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+
+      mesesLista.push(`${year}-${month}`);
+    }
+
+    const fechaInicio = `${mesesLista[0]}-01 00:00:00`;
+
+    const tiposBase = [
+      'mecanico',
+      'accidente',
+      'retraso',
+      'otro',
+    ];
+
+    let sql = `
+      SELECT
+        DATE_FORMAT(i.timestamp, '%Y-%m') AS mes,
+        i.tipo AS tipo,
+        COUNT(i.id) AS cantidad
+      FROM incidentes i
+      INNER JOIN incidentes_bus ib ON ib.incidente_id = i.id
+      INNER JOIN buses b ON b.id = ib.bus_id
+      WHERE i.timestamp >= ?
+    `;
+
+    const params: any[] = [fechaInicio];
+
+    if (empresaId) {
+      sql += ` AND b.empresa_id = ? `;
+      params.push(empresaId);
+    }
+
+    sql += `
+      GROUP BY
+        DATE_FORMAT(i.timestamp, '%Y-%m'),
+        i.tipo
+      ORDER BY
+        mes ASC,
+        tipo ASC
+    `;
+
+    const rows = await this.dataSource.query(sql, params);
+
+    const empresas = await this.dataSource.query(`
+      SELECT
+        id,
+        nit,
+        nombre,
+        activo
+      FROM empresas
+      WHERE activo = 1
+      ORDER BY nombre ASC
+    `);
+
+    const tiposEncontrados = rows.map((row: any) => row.tipo);
+
+    const tipos = Array.from(
+      new Set([
+        ...tiposBase,
+        ...tiposEncontrados,
+      ]),
+    );
+
+    const datos: Record<string, Record<string, number>> = {};
+    const totalesPorTipo: Record<string, number> = {};
+    const totalesPorMes: Record<string, number> = {};
+
+    for (const mes of mesesLista) {
+      datos[mes] = {};
+      totalesPorMes[mes] = 0;
+
+      for (const tipo of tipos) {
+        datos[mes][tipo] = 0;
+        totalesPorTipo[tipo] = totalesPorTipo[tipo] || 0;
+      }
+    }
+
+    for (const row of rows) {
+      const mes = row.mes;
+      const tipo = row.tipo;
+      const cantidad = Number(row.cantidad || 0);
+
+      if (!datos[mes]) {
+        continue;
+      }
+
+      datos[mes][tipo] = cantidad;
+
+      totalesPorTipo[tipo] =
+        (totalesPorTipo[tipo] || 0) + cantidad;
+
+      totalesPorMes[mes] =
+        (totalesPorMes[mes] || 0) + cantidad;
+    }
+
+    const totalGeneral = Object.values(totalesPorTipo)
+      .reduce((acc, value) => acc + Number(value || 0), 0);
+
+    let tipoPredominante: any = null;
+
+    for (const tipo of tipos) {
+      const total = totalesPorTipo[tipo] || 0;
+
+      if (!tipoPredominante || total > tipoPredominante.total) {
+        tipoPredominante = {
+          tipo,
+          total,
+          porcentaje:
+            totalGeneral > 0
+              ? Number(((total / totalGeneral) * 100).toFixed(2))
+              : 0,
+        };
+      }
+    }
+
+    let mesMayor: any = null;
+
+    for (const mes of mesesLista) {
+      const total = totalesPorMes[mes] || 0;
+
+      if (!mesMayor || total > mesMayor.total) {
+        mesMayor = {
+          mes,
+          total,
+        };
+      }
+    }
+
+    return {
+      meses: mesesLista,
+      tipos,
+      datos,
+      totalesPorTipo,
+      totalesPorMes,
+      totalGeneral,
+      tipoPredominante,
+      mesMayor,
+      empresas,
+      empresaId: empresaId || null,
+      mesesConsultados: cantidadMeses,
     };
   }
 
