@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository }       from 'typeorm';
 
@@ -9,6 +9,9 @@ import { Foto }           from '../fotos/entities/foto.entity';
 import { CreateIncidenteDto } from './dto/create-incidente.dto';
 import { UpdateIncidenteDto } from './dto/update-incidente.dto';
 import { GravedadIncidente }  from './enums/gravedad-incidente.enum';
+import { Turno } from '../turnos/entities/turno.entity';
+import { GpsService } from '../gps/gps.service';
+import { EstadoIncidente } from './enums/estado-incidente.enum';
 
 @Injectable()
 export class IncidentesService {
@@ -21,11 +24,22 @@ export class IncidentesService {
 
     @InjectRepository(Foto)
     private readonly fotoRepo: Repository<Foto>,
+
+    @InjectRepository(Turno)
+    private readonly turnoRepo: Repository<Turno>,
+
+    private readonly gpsService: GpsService,
   ) {}
 
   // ─── HU-ENTR-2-007: Reportar incidente ────────────────────────────────────
   async reportar(dto: CreateIncidenteDto): Promise<Incidente> {
 
+    const gps = await this.obtenerGpsDelBus(dto.busId);
+    const turno = await this.obtenerTurnoActivoDelBus(dto.busId);
+
+    const conductorId = dto.conductorId || turno?.conductorId || null;
+    const turnoId = dto.turnoId || turno?.id || null;
+    
     // 1. Crear incidente
     const incidente = this.incidenteRepo.create({
       tipo:        dto.tipo,
@@ -33,6 +47,10 @@ export class IncidentesService {
       descripcion: dto.descripcion,
       conductorId: dto.conductorId,
       turnoId:     dto.turnoId,
+      gpsId: gps.id,
+      latitud: gps.latitud !== null ? Number(gps.latitud) : null,
+      longitud: gps.longitud !== null ? Number(gps.longitud) : null,
+      fechaGps: gps.ultimaActualizacion || new Date(),
     });
     const incidenteGuardado = await this.incidenteRepo.save(incidente);
 
@@ -68,7 +86,60 @@ export class IncidentesService {
       // TODO: Implementar notificación real cuando exista módulo Empresa/Supervisor
     }
 
-    return incidenteGuardado;
+    return await this.findOneDetallado(incidenteGuardado.id);
+  }
+
+  private async obtenerGpsDelBus(busId: number) {
+    try {
+      const gps = await this.gpsService.findByBus(busId);
+
+      if (!gps.activo) {
+        throw new BadRequestException(
+          'El GPS del bus está inactivo. No se puede registrar la ubicación del incidente.',
+        );
+      }
+
+      if (gps.latitud === null || gps.longitud === null) {
+        throw new BadRequestException(
+          'El GPS del bus no tiene ubicación registrada.',
+        );
+      }
+
+      return gps;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        'El bus no tiene GPS asignado. No se puede reportar el incidente.',
+      );
+    }
+  }
+
+  private async obtenerTurnoActivoDelBus(busId: number): Promise<Turno | null> {
+    const turnos = await this.turnoRepo.find({
+      where: {
+        busId,
+      },
+      order: {
+        id: 'DESC',
+      },
+    });
+
+    const ahora = new Date();
+
+    const turnoActivo = turnos.find(turno => {
+      const inicio = new Date(turno.horaInicio);
+      const fin = new Date(turno.horaFin);
+
+      return (
+        turno.estadoTurno === 'en_curso' ||
+        (ahora >= inicio && ahora <= fin)
+      );
+    });
+
+    return turnoActivo || null;
   }
 
   // ─── HU-ENTR-2-008: Consulta por bus ──────────────────────────────────────
@@ -79,7 +150,7 @@ export class IncidentesService {
   ): Promise<any[]> {
     const incidentesBus = await this.incidenteBusRepo.find({
       where: { busId },
-      relations: ['fotos'],
+      relations: ['bus', 'fotos', 'incidente'],
       order: { fechaRegistro: 'DESC' },
     });
 
@@ -96,7 +167,9 @@ export class IncidentesService {
       resultado.push({
         ...incidente,
         incidenteBusId: ib.id,
-        fotos:          ib.fotos,
+        bus: ib.bus,
+        fotos: ib.fotos || [],
+        fechaRegistroBus: ib.fechaRegistro,
       });
     }
 
@@ -105,33 +178,85 @@ export class IncidentesService {
 
   async getStatsByBus(busId: number): Promise<any> {
     const incidentes = await this.findByBus(busId);
-    const total      = incidentes.length;
-    const resueltos  = incidentes.filter(i => i.estado === 'resuelto').length;
+
+    const total = incidentes.length;
+
+    const resueltos = incidentes.filter(
+      incidente => incidente.estado === EstadoIncidente.RESUELTO,
+    ).length;
+
+    const pendientes = incidentes.filter(
+      incidente => incidente.estado === EstadoIncidente.PENDIENTE,
+    ).length;
+
+    const enRevision = incidentes.filter(
+      incidente => incidente.estado === EstadoIncidente.EN_REVISION,
+    ).length;
 
     const porTipo: Record<string, number> = {};
-    for (const i of incidentes) {
-      porTipo[i.tipo] = (porTipo[i.tipo] || 0) + 1;
+
+    for (const incidente of incidentes) {
+      porTipo[incidente.tipo] =
+        (porTipo[incidente.tipo] || 0) + 1;
     }
 
     return {
       total,
+      pendientes,
+      enRevision,
       resueltos,
-      tasaResolucion: total > 0 ? Math.round((resueltos / total) * 100) : 0,
+      tasaResolucion:
+        total > 0
+          ? Math.round((resueltos / total) * 100)
+          : 0,
       porTipo,
     };
   }
 
   async findOne(id: number): Promise<Incidente> {
-    const incidente = await this.incidenteRepo.findOne({ where: { id } });
-    if (!incidente)
+    const incidente = await this.incidenteRepo.findOne({
+      where: { id },
+    });
+
+    if (!incidente) {
       throw new NotFoundException(`Incidente #${id} no encontrado`);
+    }
+
     return incidente;
+  }
+
+  async findOneDetallado(id: number): Promise<any> {
+    const incidente = await this.findOne(id);
+
+    const incidenteBus = await this.incidenteBusRepo.findOne({
+      where: {
+        incidenteId: id,
+      },
+      relations: [
+        'bus',
+        'fotos',
+      ],
+    });
+
+    return {
+      ...incidente,
+      incidenteBusId: incidenteBus?.id || null,
+      bus: incidenteBus?.bus || null,
+      fotos: incidenteBus?.fotos || [],
+    };
   }
 
   async update(id: number, dto: UpdateIncidenteDto): Promise<Incidente> {
     const incidente = await this.findOne(id);
-    if (dto.estado)     incidente.estado     = dto.estado;
-    if (dto.comentario !== undefined) incidente.comentario = dto.comentario;
-    return this.incidenteRepo.save(incidente);
+
+    if (dto.estado) {
+      incidente.estado = dto.estado;
+    }
+
+    if (dto.comentario !== undefined) {
+      incidente.comentario = dto.comentario;
+    }
+
+    return await this.incidenteRepo.save(incidente);
   }
 }

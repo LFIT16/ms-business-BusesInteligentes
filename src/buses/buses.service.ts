@@ -17,6 +17,11 @@ export class BusesService {
   }
 
   async create(createBusDto: CreateBusDto): Promise<Bus> {
+    this.validarCapacidadBus(
+      createBusDto.capacidadMaximaPasajeros,
+      createBusDto.capacidadSentados,
+      createBusDto.capacidadParados,
+    );
     const busExistente = await this.busesRepository.findOne({
       where: { placa: createBusDto.placa },
     });
@@ -27,6 +32,7 @@ export class BusesService {
 
     const bus = this.busesRepository.create({
       ...createBusDto,
+      empresaId: createBusDto.empresaId ?? null,
       codigoQr: this.generarCodigoQr(createBusDto.placa),
     });
 
@@ -40,6 +46,7 @@ export class BusesService {
 
     return await this.busesRepository.find({
       where,
+      relations: ['empresa'],
       order: {
         id: 'ASC',
       },
@@ -49,6 +56,7 @@ export class BusesService {
   async findOne(id: number): Promise<Bus> {
     const bus = await this.busesRepository.findOne({
       where: { id },
+      relations: ['empresa'],
     });
 
     if (!bus) {
@@ -58,24 +66,33 @@ export class BusesService {
     return bus;
   }
 
-  async update(id: number, updateBusDto: UpdateBusDto): Promise<Bus> {
+  async update(id: number, updateBusDto: UpdateBusDto) {
     const bus = await this.findOne(id);
 
-    if (updateBusDto.placa && updateBusDto.placa !== bus.placa) {
-      const busExistente = await this.busesRepository.findOne({
-        where: { placa: updateBusDto.placa },
-      });
+    const capacidadMaximaPasajeros =
+      updateBusDto.capacidadMaximaPasajeros ?? bus.capacidadMaximaPasajeros;
 
-      if (busExistente) {
-        throw new BadRequestException(`Ya existe un bus con la placa ${updateBusDto.placa}`);
-      }
-    }
+    const capacidadSentados =
+      updateBusDto.capacidadSentados ?? bus.capacidadSentados;
 
-    Object.assign(bus, updateBusDto);
+    const capacidadParados =
+      updateBusDto.capacidadParados ?? bus.capacidadParados;
 
-    await this.busesRepository.save(bus);
+    this.validarCapacidadBus(
+      capacidadMaximaPasajeros,
+      capacidadSentados,
+      capacidadParados,
+    );
 
-    return this.findOne(id);
+    Object.assign(bus, {
+      ...updateBusDto,
+      empresaId:
+        updateBusDto.empresaId !== undefined
+          ? updateBusDto.empresaId
+          : bus.empresaId,
+    });
+
+    return await this.busesRepository.save(bus);
   }
 
   async remove(id: number) {
@@ -84,5 +101,17 @@ export class BusesService {
     await this.busesRepository.remove(bus);
 
     return { message: `Bus #${id} eliminado correctamente` };
+  }
+
+  private validarCapacidadBus( capacidadMaximaPasajeros?: number, capacidadSentados?: number, capacidadParados?: number,): void {
+    const maxima = Number(capacidadMaximaPasajeros || 0);
+    const sentados = Number(capacidadSentados || 0);
+    const parados = Number(capacidadParados || 0);
+
+    if (sentados + parados > maxima) {
+      throw new BadRequestException(
+        `La suma de pasajeros sentados y parados (${sentados + parados}) no puede superar la capacidad máxima (${maxima}).`,
+      );
+    }
   }
 }

@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Headers,
 } from '@nestjs/common';
 import { ConductoresService } from './conductores.service';
 import { CreateConductoreDto } from './dto/create-conductore.dto';
@@ -18,8 +19,14 @@ export class ConductoresController {
 
   /** POST /api/conductores */
   @Post()
-  create(@Body() createConductoreDto: CreateConductoreDto) {
-    return this.conductoresService.create(createConductoreDto);
+  create(
+    @Body() createConductoreDto: CreateConductoreDto,
+    @Headers('authorization') authorization?: string,
+  ) {
+    return this.conductoresService.create(
+      createConductoreDto,
+      authorization,
+    );
   }
 
   /** GET /api/conductores */
@@ -49,7 +56,7 @@ export class ConductoresController {
     return this.conductoresService.remove(id);
   }
   @Get('by-usuario/:userId')
-findByUsuarioId(@Param('userId') userId: string) {
-  return this.conductoresService.findByUsuarioId(userId);
-}
+  findByUsuarioId(@Param('userId') userId: string) {
+    return this.conductoresService.findByUsuarioId(userId);
+  }
 }

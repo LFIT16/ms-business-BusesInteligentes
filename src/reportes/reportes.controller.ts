@@ -17,4 +17,15 @@ export class ReportesController {
       fechaFin,
     });
   }
+
+  @Get('tendencia-incidentes')
+  getTendenciaIncidentes(
+    @Query('meses') meses?: string,
+    @Query('empresaId') empresaId?: string,
+  ) {
+    return this.reportesService.getTendenciaIncidentes(
+      meses ? Number(meses) : 3,
+      empresaId ? Number(empresaId) : undefined,
+    );
+  }
 }
