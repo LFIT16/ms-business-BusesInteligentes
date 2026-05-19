@@ -478,5 +478,7 @@ export class BoletosService {
     totalesPorMetodo,
     totalGeneral: Object.values(totalesPorMetodo).reduce((a, b) => a + b, 0),
   };
+  
 }
+
 }
