@@ -60,6 +60,7 @@ export class EmpresasService {
       relations: [
         'buses',
         'conductores',
+        'participacion',
       ],
       order: {
         id: 'DESC',
@@ -75,6 +76,7 @@ export class EmpresasService {
       relations: [
         'buses',
         'conductores',
+        'participacion'
       ],
     });
 

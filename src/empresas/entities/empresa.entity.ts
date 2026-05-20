@@ -9,6 +9,7 @@ import {
 
 import { Bus } from '../../buses/entities/bus.entity';
 import { Conductore } from '../../conductores/entities/conductore.entity';
+import { Participacion } from 'src/participacion/entities/participacion.entity';
 
 @Entity('empresas')
 export class Empresa {
@@ -44,4 +45,7 @@ export class Empresa {
 
   @UpdateDateColumn({ name: 'actualizado_en' })
   actualizadoEn!: Date;
+
+  @OneToMany(() => Participacion, participacion => participacion.empresa)
+  participacion?: Participacion[];
 }
