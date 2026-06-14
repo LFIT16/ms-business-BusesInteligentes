@@ -10,12 +10,13 @@ import { ProgramacionRuta } from '../programaciones-ruta/entities/programacion-r
 import { EstadoProgramacion } from '../programaciones-ruta/enums/estado-programacion.enum';
 import { Turno } from './entities/turno.entity';
 import { Bus } from '../buses/entities/bus.entity';
-import axios from 'axios';;
+import axios from 'axios';
 import { CreateTurnoDto } from './dto/create-turno.dto';
 import { UpdateTurnoDto } from './dto/update-turno.dto';
 import { IniciarTurnoDto } from './dto/iniciar-turno.dto';
 import { EstadoTurno } from './enums/estado-turno.enum';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { Gps } from '../gps/entities/gps.entity'; // ← Importar entidad Gps
 
 @Injectable()
 export class TurnosService {
@@ -29,6 +30,8 @@ export class TurnosService {
     @InjectRepository(ProgramacionRuta)
     private readonly programacionRepo: Repository<ProgramacionRuta>,
 
+    @InjectRepository(Gps) // ← Agregar repositorio de Gps
+    private readonly gpsRepository: Repository<Gps>,
   ) {}
 
   // ─── Helpers privados ───────────────────────────────────────────────────────
@@ -38,32 +41,28 @@ export class TurnosService {
     if (!turno) throw new NotFoundException(`Turno #${id} no encontrado`);
     return turno;
   }
-  /**
- * Cambia el estado de las programaciones del bus
- * cuya fechaSalida+horaSalida cae dentro del rango del turno.
- */
-private async actualizarProgramacionesPorTurno(
-  busId: number,
-  horaInicio: Date,
-  horaFin: Date,
-  nuevoEstado: EstadoProgramacion,
-  estadoActual: EstadoProgramacion,
-): Promise<void> {
-  const programaciones = await this.programacionRepo
-    .createQueryBuilder('p')
-    .where('p.busId = :busId', { busId })
-    .andWhere('p.estado = :estado', { estado: estadoActual })
-    .getMany();
 
-  for (const prog of programaciones) {
-    // Convierte fechaSalida + horaSalida a Date para comparar
-    const fechaHora = new Date(`${prog.fechaSalida}T${prog.horaSalida}`);
-    if (fechaHora >= horaInicio && fechaHora <= horaFin) {
-      prog.estado = nuevoEstado;
-      await this.programacionRepo.save(prog);
+  private async actualizarProgramacionesPorTurno(
+    busId: number,
+    horaInicio: Date,
+    horaFin: Date,
+    nuevoEstado: EstadoProgramacion,
+    estadoActual: EstadoProgramacion,
+  ): Promise<void> {
+    const programaciones = await this.programacionRepo
+      .createQueryBuilder('p')
+      .where('p.busId = :busId', { busId })
+      .andWhere('p.estado = :estado', { estado: estadoActual })
+      .getMany();
+
+    for (const prog of programaciones) {
+      const fechaHora = new Date(`${prog.fechaSalida}T${prog.horaSalida}`);
+      if (fechaHora >= horaInicio && fechaHora <= horaFin) {
+        prog.estado = nuevoEstado;
+        await this.programacionRepo.save(prog);
+      }
     }
   }
-}
 
   private async findBusOrFail(id: number): Promise<Bus> {
     const bus = await this.busesRepository.findOne({ where: { id } });
@@ -129,7 +128,7 @@ private async actualizarProgramacionesPorTurno(
 
   async create(dto: CreateTurnoDto): Promise<Turno> {
     const horaInicio = new Date(dto.horaInicio);
-    const horaFin    = new Date(dto.horaFin);
+    const horaFin = new Date(dto.horaFin);
 
     await this.findBusOrFail(dto.busId);
     await this.validarSolapamientoConductor(dto.conductorId, horaInicio, horaFin);
@@ -137,7 +136,7 @@ private async actualizarProgramacionesPorTurno(
 
     const turno = this.turnosRepository.create({
       conductorId: dto.conductorId,
-      busId:       dto.busId,
+      busId: dto.busId,
       horaInicio,
       horaFin,
       estadoTurno: EstadoTurno.PENDIENTE,
@@ -171,10 +170,10 @@ private async actualizarProgramacionesPorTurno(
       throw new BadRequestException('Solo se pueden editar turnos en estado pendiente');
     }
 
-    const horaInicio  = dto.horaInicio  ? new Date(dto.horaInicio) : turno.horaInicio;
-    const horaFin     = dto.horaFin     ? new Date(dto.horaFin)    : turno.horaFin;
+    const horaInicio = dto.horaInicio ? new Date(dto.horaInicio) : turno.horaInicio;
+    const horaFin = dto.horaFin ? new Date(dto.horaFin) : turno.horaFin;
     const conductorId = dto.conductorId ?? turno.conductorId;
-    const busId       = dto.busId       ?? turno.busId;
+    const busId = dto.busId ?? turno.busId;
 
     if (dto.busId && dto.busId !== turno.busId) await this.findBusOrFail(dto.busId);
 
@@ -199,49 +198,77 @@ private async actualizarProgramacionesPorTurno(
 
   // ─── Lógica de negocio ──────────────────────────────────────────────────────
 
- async iniciarTurno(id: number, dto: IniciarTurnoDto): Promise<Turno> {
-  const turno = await this.findOne(id);
+  async iniciarTurno(id: number, dto: IniciarTurnoDto): Promise<Turno> {
+    const turno = await this.findOne(id);
 
-  if (turno.estadoTurno === EstadoTurno.EN_CURSO) {
-    throw new BadRequestException('El turno ya está en curso');
-  }
-  if (turno.estadoTurno === EstadoTurno.FINALIZADO) {
-    throw new BadRequestException('El turno ya finalizó y no puede reiniciarse');
-  }
+    if (turno.estadoTurno === EstadoTurno.EN_CURSO) {
+      throw new BadRequestException('El turno ya está en curso');
+    }
+    if (turno.estadoTurno === EstadoTurno.FINALIZADO) {
+      throw new BadRequestException('El turno ya finalizó y no puede reiniciarse');
+    }
 
-  const ahora        = new Date();
-  const TOLERANCIA_MS = 15 * 60 * 1000; // ← 15 minutos en ms (ajusta aquí si quieres más/menos)
+    const ahora = new Date();
+    const TOLERANCIA_MS = 15 * 60 * 1000;
 
-  const inicioPosible = new Date(turno.horaInicio.getTime() - TOLERANCIA_MS);
+    const inicioPosible = new Date(turno.horaInicio.getTime() - TOLERANCIA_MS);
 
-  if (ahora < inicioPosible) {
-    throw new BadRequestException(
-      `El turno solo puede iniciarse a partir de las ${inicioPosible.toLocaleTimeString()} ` +
-      `(15 minutos antes de la hora programada)`
+    if (ahora < inicioPosible) {
+      throw new BadRequestException(
+        `El turno solo puede iniciarse a partir de las ${inicioPosible.toLocaleTimeString()} ` +
+        `(15 minutos antes de la hora programada)`
+      );
+    }
+    if (ahora > turno.horaFin) {
+      throw new BadRequestException('El turno ya expiró según el horario programado');
+    }
+
+    turno.estadoTurno = EstadoTurno.EN_CURSO;
+    turno.estadoBus = dto.estadoBus ?? null;
+    turno.observaciones = dto.observaciones ?? null;
+    turno.horaRealInicio = ahora;
+    await this.turnosRepository.save(turno);
+
+    // ✅ ACTIVAR GPS EN LA TABLA BUSES
+    await this.busesRepository.update(turno.busId, { gpsActivo: true });
+
+    // ✅ ACTIVAR GPS EN LA TABLA GPS (IMPORTANTE)
+    const gpsExistente = await this.gpsRepository.findOne({ where: { busId: turno.busId } });
+    if (gpsExistente) {
+      await this.gpsRepository.update(
+        { busId: turno.busId },
+        { 
+          activo: true, 
+          ultimaActualizacion: new Date(),
+          latitud: gpsExistente.latitud || 5.0569,
+          longitud: gpsExistente.longitud || -75.4870
+        }
+      );
+    } else {
+      // Si no existe registro GPS, crearlo
+      const nuevoGps = this.gpsRepository.create({
+        busId: turno.busId,
+        codigo: `GPS${turno.busId}`,
+        activo: true,
+        latitud: 5.0569,
+        longitud: -75.4870,
+        ultimaActualizacion: new Date()
+      });
+      await this.gpsRepository.save(nuevoGps);
+    }
+
+    await this.actualizarProgramacionesPorTurno(
+      turno.busId,
+      turno.horaInicio,
+      turno.horaFin,
+      EstadoProgramacion.EN_CURSO,
+      EstadoProgramacion.PROGRAMADO,
     );
+
+    console.log(`✅ Turno ${id} iniciado - GPS del bus ${turno.busId} activado`);
+
+    return this.findOne(id);
   }
-  if (ahora > turno.horaFin) {
-    throw new BadRequestException('El turno ya expiró según el horario programado');
-  }
-
-  turno.estadoTurno    = EstadoTurno.EN_CURSO;
-  turno.estadoBus      = dto.estadoBus ?? null;
-  turno.observaciones  = dto.observaciones ?? null;
-  turno.horaRealInicio = ahora;
-  await this.turnosRepository.save(turno);
-
-  await this.busesRepository.update(turno.busId, { gpsActivo: true });
-  // ← AGREGAR: activa programaciones del bus dentro del rango del turno
-await this.actualizarProgramacionesPorTurno(
-  turno.busId,
-  turno.horaInicio,
-  turno.horaFin,
-  EstadoProgramacion.EN_CURSO,
-  EstadoProgramacion.PROGRAMADO,
-);
-
-  return this.findOne(id);
-}
 
   async finalizarTurno(id: number): Promise<Turno> {
     const turno = await this.findTurnoOrFail(id);
@@ -251,19 +278,28 @@ await this.actualizarProgramacionesPorTurno(
     }
 
     turno.estadoTurno = EstadoTurno.FINALIZADO;
-    turno.horaRealFin = new Date();  // ← hora exacta del click o del cron
+    turno.horaRealFin = new Date();
     await this.turnosRepository.save(turno);
 
+    // ✅ DESACTIVAR GPS EN LA TABLA BUSES
     await this.busesRepository.update(turno.busId, { gpsActivo: false });
 
-    // ← AGREGAR: finaliza programaciones en curso del bus
-await this.actualizarProgramacionesPorTurno(
-  turno.busId,
-  turno.horaInicio,
-  turno.horaFin,
-  EstadoProgramacion.FINALIZADO,
-  EstadoProgramacion.EN_CURSO,
-);
+    // ✅ DESACTIVAR GPS EN LA TABLA GPS
+    await this.gpsRepository.update(
+      { busId: turno.busId },
+      { activo: false }
+    );
+
+    await this.actualizarProgramacionesPorTurno(
+      turno.busId,
+      turno.horaInicio,
+      turno.horaFin,
+      EstadoProgramacion.FINALIZADO,
+      EstadoProgramacion.EN_CURSO,
+    );
+
+    console.log(`✅ Turno ${id} finalizado - GPS del bus ${turno.busId} desactivado`);
+
     return this.findOne(id);
   }
 
@@ -286,7 +322,7 @@ await this.actualizarProgramacionesPorTurno(
 
   // ─── Cron: auto-finaliza turnos vencidos cada minuto ────────────────────────
 
- @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_MINUTE)
   async finalizarTurnosVencidos(): Promise<void> {
     const ahora = new Date();
 
@@ -300,9 +336,11 @@ await this.actualizarProgramacionesPorTurno(
       turno.estadoTurno = EstadoTurno.FINALIZADO;
       turno.horaRealFin = ahora;
       await this.turnosRepository.save(turno);
+      
+      // ✅ DESACTIVAR GPS
       await this.busesRepository.update(turno.busId, { gpsActivo: false });
-
-      // ← AGREGAR: finaliza las programaciones en curso del bus
+      await this.gpsRepository.update({ busId: turno.busId }, { activo: false });
+      
       await this.actualizarProgramacionesPorTurno(
         turno.busId,
         turno.horaInicio,
@@ -311,8 +349,8 @@ await this.actualizarProgramacionesPorTurno(
         EstadoProgramacion.EN_CURSO,
       );
     }
-
   }
+
   async findTurnoActualByBus(busId: number): Promise<Turno | null> {
     const ahora = new Date();
 
@@ -327,11 +365,11 @@ await this.actualizarProgramacionesPorTurno(
       .getOne();
   }
 
-  async findTurnoByBusAndFechaConUsuario( busId: number, fecha: string, authorization?: string,): Promise<any> {
+  async findTurnoByBusAndFechaConUsuario(busId: number, fecha: string, authorization?: string): Promise<any> {
     const fechaColombia = this.convertirFechaUtcAColombia(fecha);
     console.log('Fecha recibida:', fecha);
-console.log('Fecha Colombia:', fechaColombia);
-console.log('Bus:', busId);
+    console.log('Fecha Colombia:', fechaColombia);
+    console.log('Bus:', busId);
 
     const [turno] = await this.turnosRepository.query(
       `
@@ -374,11 +412,7 @@ console.log('Bus:', busId);
 
       const user = data?.data?.user || data?.data || data?.user || data;
 
-      nombre =
-        user?.name ||
-        user?.nombre ||
-        user?.email ||
-        nombre;
+      nombre = user?.name || user?.nombre || user?.email || nombre;
     } catch (error: any) {
       console.error(
         'No se pudo consultar el usuario conductor:',

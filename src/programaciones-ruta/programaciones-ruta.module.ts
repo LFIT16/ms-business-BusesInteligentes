@@ -9,7 +9,7 @@ import { TurnosModule } from '../turnos/turnos.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([ProgramacionRuta, Turno]),
-    TurnosModule, // para acceder al repositorio de Turno
+    TurnosModule, 
   ],
   controllers: [ProgramacionesRutaController],
   providers: [ProgramacionesRutaService],

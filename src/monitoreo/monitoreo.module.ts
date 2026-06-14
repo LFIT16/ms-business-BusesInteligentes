@@ -14,5 +14,6 @@ import { ProgramacionesRutaModule } from '../programaciones-ruta/programaciones-
   ],
   controllers: [MonitoreoController],
   providers: [MonitoreoService, MonitoreoGateway],
+  exports: [MonitoreoService],
 })
 export class MonitoreoModule {}

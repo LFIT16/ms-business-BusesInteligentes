@@ -7,10 +7,11 @@ import { BusesModule }      from '../buses/buses.module';
 import { Bus }              from '../buses/entities/bus.entity';
 import { ProgramacionRuta } from '../programaciones-ruta/entities/programacion-ruta.entity'; // ← NUEVO
 import { Conductore } from 'src/conductores/entities/conductore.entity';
+import { Gps } from 'src/gps/entities/gps.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Turno, Bus, ProgramacionRuta, Conductore]), // ← AGREGAR ProgramacionRuta y Conductore
+    TypeOrmModule.forFeature([Turno, Bus, ProgramacionRuta, Conductore, Gps]), // ← AGREGAR ProgramacionRuta y Conductore
     BusesModule,
   ],
   controllers: [TurnosController],

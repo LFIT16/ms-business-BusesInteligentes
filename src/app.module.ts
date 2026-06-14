@@ -27,6 +27,7 @@ import { IncidentesModule } from './incidentes/incidentes.module';
 import { GpsModule } from './gps/gps.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { MonitoreoModule } from './monitoreo/monitoreo.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -71,6 +72,7 @@ import { MonitoreoModule } from './monitoreo/monitoreo.module';
     GpsModule,
     EmpresasModule,
     MonitoreoModule,
+    DashboardModule,
   ],
 })
 export class AppModule {}
