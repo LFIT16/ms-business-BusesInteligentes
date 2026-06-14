@@ -10,12 +10,17 @@ import { Repository } from 'typeorm';
 import { Gps } from './entities/gps.entity';
 import { CreateGpsDto } from './dto/create-gps.dto';
 import { UpdateGpsDto } from './dto/update-gps.dto';
+import { IncidentesBus } from '../incidentes-bus/entities/incidentes-bus.entity';
+import { EstadoIncidente } from '../incidentes/enums/estado-incidente.enum';
 
 @Injectable()
 export class GpsService {
   constructor(
     @InjectRepository(Gps)
     private readonly gpsRepository: Repository<Gps>,
+
+    @InjectRepository(IncidentesBus)
+    private readonly incidentesBusRepository: Repository<IncidentesBus>,
   ) {}
 
   async create(createGpsDto: CreateGpsDto): Promise<Gps> {
@@ -69,6 +74,29 @@ export class GpsService {
     });
   }
 
+  async findUbicacionesActivas(): Promise<Gps[]> {
+    return await this.gpsRepository.find({
+      where: { activo: true },
+      relations: ['bus'],
+      order: {
+        ultimaActualizacion: 'DESC',
+      },
+    });
+  }
+
+  async tieneIncidenteActivo(busId: number): Promise<boolean> {
+    const incidente = await this.incidentesBusRepository
+      .createQueryBuilder('ib')
+      .innerJoin('ib.incidente', 'incidente')
+      .where('ib.busId = :busId', { busId })
+      .andWhere('incidente.estado != :resuelto', {
+        resuelto: EstadoIncidente.RESUELTO,
+      })
+      .getOne();
+
+    return !!incidente;
+  }
+
   async findOne(id: number): Promise<Gps> {
     const gps = await this.gpsRepository.findOne({
       where: { id },
@@ -86,6 +114,7 @@ export class GpsService {
       where: {
         busId,
       },
+      relations: ['bus'],
     });
 
     if (!gps) {

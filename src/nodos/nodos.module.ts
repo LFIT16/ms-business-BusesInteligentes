@@ -12,5 +12,6 @@ import { ParaderoModule } from '../paradero/paradero.module';
   imports: [TypeOrmModule.forFeature([Ruta, Nodo, Paradero]), RutasModule, ParaderoModule],
   controllers: [NodosController],
   providers: [NodosService],
+  exports: [NodosService],
 })
 export class NodosModule {}

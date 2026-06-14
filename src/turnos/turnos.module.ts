@@ -5,7 +5,6 @@ import { TurnosController } from './turnos.controller';
 import { Turno }            from './entities/turno.entity';
 import { BusesModule }      from '../buses/buses.module';
 import { Bus }              from '../buses/entities/bus.entity';
-import { ScheduleModule }   from '@nestjs/schedule';
 import { ProgramacionRuta } from '../programaciones-ruta/entities/programacion-ruta.entity'; // ← NUEVO
 import { Conductore } from 'src/conductores/entities/conductore.entity';
 
@@ -13,7 +12,6 @@ import { Conductore } from 'src/conductores/entities/conductore.entity';
   imports: [
     TypeOrmModule.forFeature([Turno, Bus, ProgramacionRuta, Conductore]), // ← AGREGAR ProgramacionRuta y Conductore
     BusesModule,
-    ScheduleModule.forRoot(),
   ],
   controllers: [TurnosController],
   providers:   [TurnosService],

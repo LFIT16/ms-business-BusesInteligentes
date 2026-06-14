@@ -184,5 +184,15 @@ export class ProgramacionesRutaService {
     await this.repo.save(prog);
     return this.findOne(id);
   }
+
+  async findEnCursoPorBus(busId: number): Promise<ProgramacionRuta | null> {
+    return await this.repo.findOne({
+    where: {
+      busId,
+      estado: EstadoProgramacion.EN_CURSO,
+    },
+    relations: ['ruta'],
+  });
+  }
   
 }
