@@ -26,6 +26,17 @@ export class SecurityGuard implements CanActivate {
       return true;
     }
 
+    // ── Bypass para microservicios internos ───────────────────────────────
+    const internalKey = headers['x-internal-api-key'];
+    if (internalKey) {
+      if (internalKey === process.env.INTERNAL_API_KEY) {
+        this.logger.log(`✅ Acceso interno autorizado: ${method} ${cleanUrl}`);
+        return true;
+      }
+      throw new UnauthorizedException('API key interna inválida');
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     if (!headers.authorization) {
       throw new UnauthorizedException('Token de autorización faltante');
     }
@@ -50,26 +61,14 @@ export class SecurityGuard implements CanActivate {
         return true;
       }
 
-      // Tiene token, pero no permiso
       throw new ForbiddenException('No autorizado para acceder a este recurso');
     } catch (error: any) {
       this.logger.error(`Error al validar permisos: ${error.message}`);
 
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
-
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-
-      if (error.response?.status === 401) {
-        throw new UnauthorizedException('Token inválido o expirado');
-      }
-
-      if (error.response?.status === 403) {
-        throw new ForbiddenException('No autorizado para acceder a este recurso');
-      }
+      if (error instanceof ForbiddenException) throw error;
+      if (error instanceof UnauthorizedException) throw error;
+      if (error.response?.status === 401) throw new UnauthorizedException('Token inválido o expirado');
+      if (error.response?.status === 403) throw new ForbiddenException('No autorizado para acceder a este recurso');
 
       throw new UnauthorizedException('Error al validar permisos');
     }
