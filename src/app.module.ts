@@ -28,6 +28,7 @@ import { GpsModule } from './gps/gps.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { MonitoreoModule } from './monitoreo/monitoreo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { CitasModule } from './citas/citas.module';
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -44,9 +45,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false, // Usaremos migraciones
-     
-
-   
       }),
     }),
     ProgramacionesRutaModule,
@@ -73,6 +71,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     EmpresasModule,
     MonitoreoModule,
     DashboardModule,
+    CitasModule,
   ],
 })
 export class AppModule {}

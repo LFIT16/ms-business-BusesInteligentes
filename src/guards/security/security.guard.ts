@@ -20,9 +20,15 @@ export class SecurityGuard implements CanActivate {
     const publicRoutes = [
       '/api/recargas/epayco/confirmacion',
       '/api/recargas/epayco/respuesta',
+      '/api/citas/cancelar'
     ];
 
-    if (publicRoutes.includes(cleanUrl)) {
+    const isPublicRoute =
+      publicRoutes.some(route =>
+        cleanUrl.startsWith(route)
+      );
+
+    if (isPublicRoute) {
       return true;
     }
 
@@ -30,7 +36,6 @@ export class SecurityGuard implements CanActivate {
     const internalKey = headers['x-internal-api-key'];
     if (internalKey) {
       if (internalKey === process.env.INTERNAL_API_KEY) {
-        this.logger.log(`✅ Acceso interno autorizado: ${method} ${cleanUrl}`);
         return true;
       }
       throw new UnauthorizedException('API key interna inválida');

@@ -66,11 +66,6 @@ export class SimuladorGpsService implements OnModuleInit {
       this.posiciones[gps.busId] = Math.floor(progresoTotal / this.PASOS_POR_TRAMO);
       this.progreso[gps.busId] = progresoTotal % this.PASOS_POR_TRAMO;
 
-      this.logger.log(
-        `Bus ${gps.busId} rehidratado — salida: ${horaSalida}, ` +
-        `${Math.round(minutosTranscurridos)}min transcurridos → ` +
-        `paradero ${this.posiciones[gps.busId]}, paso ${this.progreso[gps.busId]}`
-      );
     }
   }
 
@@ -96,7 +91,6 @@ export class SimuladorGpsService implements OnModuleInit {
               0
             );
           }
-          this.logger.log(`Bus ${gps.busId} detenido por incidente activo`);
           continue; 
         } else {
           // Limpiar posición guardada si ya no hay incidente
@@ -165,10 +159,6 @@ export class SimuladorGpsService implements OnModuleInit {
           longitud,
           35,
           0
-        );
-
-        this.logger.log(
-          `Bus ${gps.busId} moviéndose entre ${origen.nombre} → ${destino.nombre} (paso ${paso})`
         );
 
         this.progreso[gps.busId]++;
