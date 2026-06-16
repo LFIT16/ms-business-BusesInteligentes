@@ -29,6 +29,7 @@ import { EmpresasModule } from './empresas/empresas.module';
 import { MonitoreoModule } from './monitoreo/monitoreo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CitasModule } from './citas/citas.module';
+import { PqrsModule } from './pqrs/pqrs.module';
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -72,6 +73,7 @@ import { CitasModule } from './citas/citas.module';
     MonitoreoModule,
     DashboardModule,
     CitasModule,
+    PqrsModule,
   ],
 })
 export class AppModule {}
