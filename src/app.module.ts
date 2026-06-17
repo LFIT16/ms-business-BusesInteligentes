@@ -27,7 +27,7 @@ import { IncidentesModule } from './incidentes/incidentes.module';
 import { GpsModule } from './gps/gps.module';
 import { EmpresasModule } from './empresas/empresas.module';
 import { GruposModule } from './grupos/grupos.module';
-import { MensajesModule } from './mensajes/mensajes.module';
+import { MensajesModule } from './mensajes-grupo/mensajes.module';
 import { MonitoreoModule } from './monitoreo/monitoreo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CitasModule } from './citas/citas.module';

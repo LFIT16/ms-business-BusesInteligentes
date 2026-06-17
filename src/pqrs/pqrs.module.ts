@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
-import { PqrsService } from './pqrs.service';
-import { PqrsController } from './pqrs.controller';
+import { PQRSService } from './pqrs.service';
+import { PQRSController } from './pqrs.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { PQRS } from './entities/pqr.entity';
+import { UsuarioClient } from 'src/clients/usuario.client';
 
 @Module({
-  controllers: [PqrsController],
-  providers: [PqrsService],
+  imports: [
+    TypeOrmModule.forFeature([PQRS]),
+  ],
+  providers: [
+    PQRSService,
+    UsuarioClient,
+  ],
+  controllers: [PQRSController],
 })
 export class PqrsModule {}
