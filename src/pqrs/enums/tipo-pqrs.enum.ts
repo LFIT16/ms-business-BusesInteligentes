@@ -1,5 +1,5 @@
 export enum TipoPQRS {
-  PETICION = 'Petición',
+  PETICION = 'Peticion',
   QUEJA = 'Queja',
   RECLAMO = 'Reclamo',
   SUGERENCIA = 'Sugerencia',

@@ -32,6 +32,7 @@ import { MonitoreoModule } from './monitoreo/monitoreo.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { CitasModule } from './citas/citas.module';
 import { PqrsModule } from './pqrs/pqrs.module';
+import { MensajePrivadoModule } from './mensaje-privado/mensaje.module';
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -74,6 +75,7 @@ import { PqrsModule } from './pqrs/pqrs.module';
     EmpresasModule,
     GruposModule,
     MensajesModule,
+    MensajePrivadoModule,
     MonitoreoModule,
     DashboardModule,
     CitasModule,
