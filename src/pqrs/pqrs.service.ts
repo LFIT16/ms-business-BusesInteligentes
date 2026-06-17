@@ -38,7 +38,7 @@ export class PQRSService {
       fechaLimite,
       alertaEnviada: false,
       supervisorId: supervisor?.id || null,
-      fotos: body.fotos || [], 
+      fotos: body.fotos, 
     });
 
     const saved = (await this.pqrsRepository.save(pqrs)) as any;
