@@ -30,6 +30,11 @@ export class GruposController {
     return this.gruposService.findAll(busqueda);
   }
 
+@Get('mis-grupos/:usuarioId')
+misGrupos(@Param('usuarioId') usuarioId: string) {
+  return this.gruposService.misGrupos(usuarioId);
+}
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.gruposService.findOne(+id);

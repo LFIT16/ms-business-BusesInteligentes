@@ -11,6 +11,9 @@ import { Server, Socket } from 'socket.io';
 import { MensajesService } from './mensajes.service';
 import { CreateMensajeDto } from './dto/create-mensaje.dto';
 import { Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { MembresiaGrupo, EstadoMembresia } from '../grupos/entities/membresia-grupo.entity';
 import axios from 'axios';
 
 @WebSocketGateway({
@@ -26,7 +29,11 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   private readonly logger = new Logger('MensajesGateway');
 
-  constructor(private readonly mensajesService: MensajesService) {}
+  constructor(
+    private readonly mensajesService: MensajesService,
+    @InjectRepository(MembresiaGrupo)
+    private readonly membresiaRepo: Repository<MembresiaGrupo>,
+  ) {}
 
   handleConnection(client: Socket) {
     this.logger.log(`Cliente conectado: ${client.id}`);
@@ -45,7 +52,6 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const mensajes = await this.mensajesService.findByGrupo(data.grupoId, data.usuarioId);
       const room = `grupo-${data.grupoId}`;
       client.join(room);
-      // Guardar usuarioId en el socket para usarlo después
       (client as any).usuarioId = data.usuarioId;
       (client as any).grupoId = data.grupoId;
       client.emit('historialMensajes', mensajes);
@@ -70,19 +76,21 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       const mensaje = await this.mensajesService.create(dto);
       const room = `grupo-${dto.grupoId}`;
-
-      // Emitir a todos en la sala
       this.server.to(room).emit('nuevoMensaje', { ...mensaje, lecturas: 0, leido: false });
 
-      // HU-ENTR-3-005: Notificar a miembros que no están en el chat
-      await this.notificarNuevoMensaje(dto.grupoId, dto.usuarioId, dto.nombreUsuario, mensaje.id!);
-
+      // Notificar con contenido real y destinatarios correctos
+      await this.notificarNuevoMensaje(
+        dto.grupoId,
+        dto.usuarioId,
+        dto.nombreUsuario,
+        mensaje.id!,
+        dto.contenido,  // ← contenido real
+      );
     } catch (error: any) {
       client.emit('errorMensaje', { message: error.message });
     }
   }
 
-  // HU-ENTR-3-005: Doble check — registrar lectura
   @SubscribeMessage('marcarLeido')
   async handleMarcarLeido(
     @MessageBody() data: { mensajeId: number; usuarioId: string; grupoId: number },
@@ -91,8 +99,6 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
     try {
       await this.mensajesService.registrarLectura(data.mensajeId, data.usuarioId);
       const lecturas = await this.mensajesService.obtenerLecturas(data.mensajeId);
-
-      // Notificar al emisor original que su mensaje fue leído
       const room = `grupo-${data.grupoId}`;
       this.server.to(room).emit('mensajeLeido', {
         mensajeId: data.mensajeId,
@@ -101,7 +107,6 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
     } catch {}
   }
 
-  // HU-ENTR-3-005: Admin elimina mensaje
   @SubscribeMessage('eliminarMensaje')
   async handleEliminarMensaje(
     @MessageBody() data: { mensajeId: number; usuarioId: string; grupoId: number },
@@ -121,12 +126,31 @@ export class MensajesGateway implements OnGatewayConnection, OnGatewayDisconnect
     emisorId: string,
     nombreEmisor: string,
     mensajeId: number,
+    contenido: string,
   ) {
     try {
+      // Obtener miembros activos del grupo excepto el emisor
+      const miembros = await this.membresiaRepo.find({
+        where: { grupoId, estado: EstadoMembresia.ACTIVO },
+      });
+
+      const destinatarios = miembros
+        .map(m => m.usuarioId)
+        .filter(id => id !== emisorId);
+
+      if (destinatarios.length === 0) return;
+
       const msNotif = process.env.MS_NOTIFICATIONS || 'http://localhost:3001';
       await axios.post(`${msNotif}/api/notificaciones/grupos/nuevo-mensaje`, {
-        grupoId, emisorId, nombreEmisor, mensajeId,
+        grupoId,
+        emisorId,
+        nombreEmisor,
+        mensajeId,
+        contenido,       // ← contenido real del mensaje
+        destinatarios,
       });
-    } catch {}
+    } catch (e) {
+      this.logger.error('Error notificando nuevo mensaje:', e);
+    }
   }
 }

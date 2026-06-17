@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Headers, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Headers, Patch, Query } from '@nestjs/common';
 import { AlertasService } from './alertas.service';
 import { CreateAlertaDto } from './dto/create-alerta.dto';
 
@@ -12,6 +12,17 @@ export class AlertasController {
     @Headers('authorization') token: string,
   ) {
     return this.alertasService.create(dto, token);
+  }
+
+  // HU-ENTR-3-008: preview de destinatarios antes de enviar
+  @Get('preview-destinatarios')
+  previewDestinatarios(
+    @Query('alcance') alcance: string,
+    @Query('rutaId') rutaId?: string,
+    @Query('zona') zona?: string,
+    @Headers('authorization') token?: string,
+  ) {
+    return this.alertasService.contarDestinatarios(alcance, rutaId ? +rutaId : undefined, zona, token);
   }
 
   @Get()

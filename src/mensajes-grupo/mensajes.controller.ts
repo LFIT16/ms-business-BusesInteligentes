@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, Delete, Request } from '@nestjs/common';
+import { Controller, Get, Param, Query, Delete, Headers } from '@nestjs/common';
 import { MensajesService } from './mensajes.service';
 
 @Controller('/api/mensajes')
@@ -15,8 +15,11 @@ export class MensajesController {
   }
 
   @Get(':id/lecturas')
-  obtenerLecturas(@Param('id') id: string) {
-    return this.mensajesService.obtenerLecturas(+id);
+  obtenerLecturas(
+    @Param('id') id: string,
+    @Headers('authorization') token?: string,
+  ) {
+    return this.mensajesService.obtenerLecturas(+id, token);
   }
 
   @Delete(':id')

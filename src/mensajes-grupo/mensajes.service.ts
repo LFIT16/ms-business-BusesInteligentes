@@ -5,6 +5,7 @@ import { MensajeGrupo } from './entities/mensaje-grupo.entity';
 import { LecturaMensaje } from './entities/lectura-mensaje.entity';
 import { CreateMensajeDto } from './dto/create-mensaje.dto';
 import { MembresiaGrupo, EstadoMembresia, RolMembresia } from '../grupos/entities/membresia-grupo.entity';
+import axios from 'axios';
 
 @Injectable()
 export class MensajesService {
@@ -32,54 +33,85 @@ export class MensajesService {
     return this.mensajeRepo.save(mensaje);
   }
 
-  async findByGrupo(grupoId: number, usuarioId: string, limit = 100): Promise<any[]> {
-    const membresia = await this.membresiaRepo.findOne({
-      where: [
-        { grupoId, usuarioId, estado: EstadoMembresia.ACTIVO },
-        { grupoId, usuarioId, estado: EstadoMembresia.INACTIVO },
-      ],
+async findByGrupo(grupoId: number, usuarioId: string, limit = 100): Promise<any[]> {
+  let membresia = await this.membresiaRepo.findOne({
+    where: { grupoId, usuarioId, estado: EstadoMembresia.ACTIVO },
+  });
+
+  if (!membresia) {
+    membresia = await this.membresiaRepo.findOne({
+      where: { grupoId, usuarioId, estado: EstadoMembresia.INACTIVO },
+      order: { fechaSalida: 'DESC' },
     });
+  }
 
-    if (!membresia) throw new ForbiddenException('No tienes acceso al historial de este grupo');
+  if (!membresia) throw new ForbiddenException('No tienes acceso al historial de este grupo');
 
-    const qb = this.mensajeRepo
-      .createQueryBuilder('m')
-      .leftJoinAndSelect('m.lecturas', 'l')
-      .where('m.grupoId = :grupoId', { grupoId })
-      .andWhere('m.fechaEnvio >= :fechaUnion', { fechaUnion: membresia.fechaUnion })
-      .orderBy('m.fechaEnvio', 'ASC')
-      .take(limit);
+  const qb = this.mensajeRepo
+    .createQueryBuilder('m')
+    .where('m.grupoId = :grupoId', { grupoId })
+    .andWhere('m.fechaEnvio >= :fechaUnion', { fechaUnion: membresia.fechaUnion })
+    .orderBy('m.fechaEnvio', 'ASC')
+    .take(limit);
 
-    if (membresia.fechaSalida) {
-      qb.andWhere('m.fechaEnvio <= :fechaSalida', { fechaSalida: membresia.fechaSalida });
-    }
+  if (membresia.estado === EstadoMembresia.INACTIVO && membresia.fechaSalida) {
+    qb.andWhere('m.fechaEnvio <= :fechaSalida', { fechaSalida: membresia.fechaSalida });
+  }
 
-    const mensajes = await qb.getMany();
+  const mensajes = await qb.getMany();
 
-    // Enriquecer con info de lecturas para doble check
-    return mensajes.map(m => ({
+  if (mensajes.length === 0) return [];
+
+  // FIX: cargar lecturas por separado para evitar bug de TypeORM con take()
+  const mensajeIds = mensajes.map(m => m.id!);
+  const lecturas = await this.lecturaRepo
+    .createQueryBuilder('l')
+    .where('l.mensajeId IN (:...ids)', { ids: mensajeIds })
+    .getMany();
+
+  return mensajes.map(m => {
+    const lecturasMsg = lecturas.filter(l => l.mensajeId === m.id);
+    return {
       ...m,
       contenido: m.eliminado ? '🚫 Mensaje eliminado' : m.contenido,
-      lecturas:  m.lecturas?.length ?? 0,
-      leido:     m.lecturas?.some(l => l.usuarioId === usuarioId) ?? false,
-    }));
-  }
-
+      lecturas:  lecturasMsg.length,
+      leido:     lecturasMsg.some(l => l.usuarioId === usuarioId),
+    };
+  });
+}
   // HU-ENTR-3-005: Registrar lectura (doble check)
-  async registrarLectura(mensajeId: number, usuarioId: string): Promise<void> {
-    const existe = await this.lecturaRepo.findOne({
-      where: { mensajeId, usuarioId },
-    });
-    if (existe) return;
+  // Reemplaza el método registrarLectura en mensajes.service.ts con este:
 
-    const lectura = this.lecturaRepo.create({ mensajeId, usuarioId });
-    await this.lecturaRepo.save(lectura);
-  }
+async registrarLectura(mensajeId: number, usuarioId: string): Promise<void> {
+  const mensaje = await this.mensajeRepo.findOne({ where: { id: mensajeId } });
+  if (!mensaje) return;
+  if (mensaje.usuarioId === usuarioId) return; // FIX: el emisor no se marca como lector
+
+  const existe = await this.lecturaRepo.findOne({ where: { mensajeId, usuarioId } });
+  if (existe) return;
+
+  const lectura = this.lecturaRepo.create({ mensajeId, usuarioId });
+  await this.lecturaRepo.save(lectura);
+}
 
   // HU-ENTR-3-005: Ver quiénes leyeron el mensaje
-  async obtenerLecturas(mensajeId: number): Promise<LecturaMensaje[]> {
-    return this.lecturaRepo.find({ where: { mensajeId } });
-  }
+ async obtenerLecturas(mensajeId: number, token?: string): Promise<any[]> {
+  const lecturas = await this.lecturaRepo.find({ where: { mensajeId } });
+
+  return Promise.all(
+    lecturas.map(async l => {
+      let nombreUsuario = l.usuarioId;
+      try {
+        const { data } = await axios.get(
+          `${process.env.MS_SECURITY || 'http://localhost:8080'}/api/users/${l.usuarioId}`,
+          { headers: token ? { Authorization: token } : {} }
+        );
+        nombreUsuario = data?.name || data?.githubUsername || l.usuarioId;
+      } catch {}
+      return { ...l, nombreUsuario };
+    }),
+  );
+}
 
   // HU-ENTR-3-005: Admin elimina mensaje
   async eliminarMensaje(mensajeId: number, usuarioId: string): Promise<{ message: string }> {
@@ -105,4 +137,6 @@ export class MensajesService {
 
     return { message: 'Mensaje eliminado correctamente' };
   }
+  
 }
+

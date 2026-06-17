@@ -150,6 +150,39 @@ export class AlertasService {
     return alerta;
   }
 
+  // Agregar este método en alertas.service.ts después de findOne()
+
+async contarDestinatarios(
+  alcance: string,
+  rutaId?: number,
+  zona?: string,
+  token?: string,
+): Promise<{ total: number }> {
+  try {
+    const destinatarios = await this.obtenerDestinatariosPorAlcance(alcance, rutaId, zona, token ?? '');
+    return { total: destinatarios.length };
+  } catch {
+    return { total: 0 };
+  }
+}
+
+private async obtenerDestinatariosPorAlcance(
+  alcance: string,
+  rutaId?: number,
+  zona?: string,
+  token?: string,
+): Promise<string[]> {
+  switch (alcance) {
+    case 'todos':
+      return await this.obtenerTodosUsuarios(token ?? '');
+    case 'por_ruta':
+      return rutaId ? await this.obtenerUsuariosPorRuta(rutaId, token ?? '') : [];
+    case 'por_zona':
+      return zona ? await this.obtenerUsuariosPorZona(zona, token ?? '') : [];
+    default:
+      return [];
+  }
+}
   async marcarLeido(alertaId: number): Promise<void> {
     const alerta = await this.findOne(alertaId);
     alerta.totalLeidos = (alerta.totalLeidos || 0) + 1;

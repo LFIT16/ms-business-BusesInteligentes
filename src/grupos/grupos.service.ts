@@ -117,7 +117,27 @@ export class GruposService {
       })),
     );
   }
+// Agregar este método en grupos.service.ts después de findAll()
 
+async misGrupos(usuarioId: string): Promise<(Grupo & { totalMiembros: number; rol: string })[]> {
+  const membresias = await this.membresiaRepo.find({
+    where: { usuarioId, estado: EstadoMembresia.ACTIVO },
+    order: { fechaUnion: 'DESC' },
+  });
+
+  return Promise.all(
+    membresias.map(async m => {
+      const grupo = await this.grupoRepo.findOne({ where: { id: m.grupoId, activo: true } });
+      if (!grupo) return null;
+
+      const totalMiembros = await this.membresiaRepo.count({
+        where: { grupoId: grupo.id, estado: EstadoMembresia.ACTIVO },
+      });
+
+      return { ...grupo, totalMiembros, rol: m.rol };
+    }),
+  ).then(grupos => grupos.filter(g => g !== null) as any[]);
+}
   async findOne(id: number): Promise<Grupo & { totalMiembros: number }> {
     const grupo = await this.grupoRepo.findOne({ where: { id } });
     if (!grupo) throw new NotFoundException(`Grupo #${id} no encontrado`);
@@ -161,7 +181,10 @@ export class GruposService {
       // Si era INACTIVO, reactivar
       if (existe.estado === EstadoMembresia.INACTIVO) {
         existe.estado = EstadoMembresia.ACTIVO;
-        existe.fechaSalida = undefined;
+          existe.fechaSalida = null as any; 
+            existe.fechaUnion  = new Date(); // ← actualizar fechaUnion a ahora
+
+
         const saved = await this.membresiaRepo.save(existe);
         await this.registrarLog(grupoId, dto.usuarioId, AccionLog.UNION);
         await this.notificarBienvenida(dto.usuarioId, grupo.nombre, grupoId);

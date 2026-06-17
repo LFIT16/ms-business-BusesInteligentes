@@ -15,6 +15,7 @@ export class LecturaMensaje {
 
   @Column({ name: 'mensaje_id' })
   mensajeId!: number;
+  
 
   @Column({ name: 'usuario_id' })
   usuarioId!: string;
@@ -25,4 +26,6 @@ export class LecturaMensaje {
   @ManyToOne(() => MensajeGrupo, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'mensaje_id' })
   mensaje?: MensajeGrupo;
+
+  
 }
