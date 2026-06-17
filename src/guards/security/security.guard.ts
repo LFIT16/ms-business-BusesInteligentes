@@ -26,7 +26,9 @@ export class SecurityGuard implements CanActivate {
     const publicRoutes = [
       '/api/recargas/epayco/confirmacion',
       '/api/recargas/epayco/respuesta',
-      '/api/citas/cancelar'
+      '/api/citas/cancelar',
+      '/api/clima/verificar'
+
     ];
 
     const isPublicRoute =
@@ -48,6 +50,7 @@ export class SecurityGuard implements CanActivate {
 
     if (!headers.authorization) {
       throw new UnauthorizedException('Token de autorización faltante');
+
     }
 
     const token = headers.authorization.replace('Bearer ', '');
@@ -56,8 +59,6 @@ export class SecurityGuard implements CanActivate {
       url: normalizedUrl,
       method,
     };
-
-    console.log('🔍 Enviando a ms-security:', permissionData);
 
     try {
       const securityUrl = `${process.env.MS_SECURITY}/api/public/security/permissions-validation`;

@@ -4,17 +4,31 @@ import axios from 'axios';
 @Injectable()
 export class UsuarioClient {
   private baseUrl = process.env.MS_SECURITY;
+  private internalApiKey = process.env.INTERNAL_API_KEY;
 
   async getUsuarioById(id: string, token: string) {
-    const { data } = await axios.get(
-      `${this.baseUrl}/api/users/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-    return data;
+    try {
+      const headers: any = {};
+      
+      // Si es el token especial 'internal', usar API key interna
+      if (token === 'internal' && this.internalApiKey) {
+        headers['x-internal-api-key'] = this.internalApiKey;
+      } else if (token && token !== 'internal') {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const { data } = await axios.get(
+        `${this.baseUrl}/api/users/${id}`,
+        { headers }
+      );
+      return data;
+    } catch (error: unknown) {
+      console.error(
+        `Error obteniendo usuario ${id}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+      return null;
+    }
   }
 
   async getSupervisores(token?: string): Promise<any[]> {

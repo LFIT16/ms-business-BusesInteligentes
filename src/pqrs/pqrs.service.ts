@@ -186,8 +186,6 @@ export class PQRSService {
       .andWhere('pqrs.alertaEnviada = :alertaEnviada', { alertaEnviada: false })
       .getMany();
 
-    console.log(`📋 Se encontraron ${pqrsVencidos.length} PQRS vencidos`);
-
     for (const pqrs of pqrsVencidos) {
       await this.enviarAlertaSupervisor(pqrs, token);
       pqrs.alertaEnviada = true;

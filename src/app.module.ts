@@ -33,6 +33,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CitasModule } from './citas/citas.module';
 import { PqrsModule } from './pqrs/pqrs.module';
 import { MensajePrivadoModule } from './mensaje-privado/mensaje.module';
+import { ClimaModule } from './clima/clima.module';
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -80,6 +81,7 @@ import { MensajePrivadoModule } from './mensaje-privado/mensaje.module';
     DashboardModule,
     CitasModule,
     PqrsModule,
+    ClimaModule,
   ],
 })
 export class AppModule {}
