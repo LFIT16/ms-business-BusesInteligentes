@@ -27,6 +27,7 @@ export class SecurityGuard implements CanActivate {
       '/api/recargas/epayco/confirmacion',
       '/api/recargas/epayco/respuesta',
       '/api/citas/cancelar',
+      '/api/clima/verificar'
     ];
 
     const isPublicRoute = 

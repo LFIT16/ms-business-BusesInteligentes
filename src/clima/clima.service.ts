@@ -69,9 +69,22 @@ export class ClimaService {
 
       const response = await axios.get(url);
       return response.data;
-    } catch (error: unknown) {
-      console.error('❌ Error obteniendo clima:', error);
+    } catch (error: any) {
+      // 🟢 CAPTURA EL 404: Si la API no encuentra la ciudad, evita que el proceso muera
+      if (error.response && error.response.status === 404) {
+        console.warn(`⚠️ La ciudad "${ciudad}" no fue encontrada en OpenWeatherMap. Usando respuesta segura por defecto.`);
+        
+        // Retornamos un objeto simulado con clima favorable para no romper el flujo del bucle
+        return {
+          name: ciudad,
+          main: { temp: 20, humidity: 50 },
+          wind: { speed: 2.0 },
+          weather: [{ description: 'clima no disponible (ciudad no encontrada)' }],
+          clouds: { all: 20 }
+        };
+      }
 
+      console.error('❌ Error obteniendo clima:', error);
       const mensajeError = error instanceof Error ? error.message : JSON.stringify(error);
       throw new HttpException(
         `Error obteniendo datos del clima: ${mensajeError}`,
@@ -128,12 +141,12 @@ export class ClimaService {
       return 'Bogota,CO';
     }
 
-    return `${capitalizada},CO`;
+    // 🟢 CORRECCIÓN: Devolvemos solo el nombre de la ciudad (sin el ,CO fijo) 
+    // para que el buscador global de OpenWeatherMap sea flexible y encuentre Samaná.
+    return capitalizada;
   }
 
-  // ==========================================
-  // Procesar clima
-  // ==========================================
+
   private procesarClima(data: any) {
     const temp = data.main.temp;
     const humedad = data.main.humidity;
