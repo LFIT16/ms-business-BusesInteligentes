@@ -22,17 +22,15 @@ export class PQRSService {
 
   async crearPQRS(body: any, token: string) {
   try {
-    const radicado = await this.generarRadicado();
     const diasPrometidos = this.getDiasPrometidos(body.tipo);
     const fechaLimite = new Date();
     fechaLimite.setDate(fechaLimite.getDate() + diasPrometidos);
 
-    // 👈 Obtener supervisor aleatorio
     const supervisor = await this.usuarioClient.getSupervisorAleatorio(token);
 
-    const pqrs = this.pqrsRepository.create({
+    const pqrsInicial = this.pqrsRepository.create({
       ...body,
-      radicado,
+      radicado: `TEMP-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       estado: 'Enviado',
       diasPrometidos,
       fechaLimite,
@@ -41,17 +39,24 @@ export class PQRSService {
       fotos: body.fotos, 
     });
 
-    const saved = (await this.pqrsRepository.save(pqrs)) as any;
+    const saved = (await this.pqrsRepository.save(pqrsInicial)) as any;
+
+    const anioActual = new Date().getFullYear(); // 2026
+    const consecutivo = String(saved.id).padStart(6, '0'); // Convierte, por ejemplo, el ID 17 en '000017'
+    const radicadoOficial = `PQRS-${anioActual}-${consecutivo}`;
+
+    saved.radicado = radicadoOficial;
+    await this.pqrsRepository.save(saved);
 
     const usuario = await this.usuarioClient.getUsuarioById(
       body.usuarioId,
       token,
     );
 
-    const link = `${process.env.FRONTEND_URL}/pqrs/${radicado}`;
+    const link = `${process.env.FRONTEND_URL}/pqrs/${radicadoOficial}`;
     
     const payload = {
-      radicado,
+      radicado: radicadoOficial,
       descripcion: body.descripcion,
       tipo: body.tipo,
       categoria: body.categoria,
@@ -65,30 +70,30 @@ export class PQRSService {
       supervisorEmail: supervisor?.email || null,
     };
 
-      if (!this.n8nWebhook) {
-        throw new HttpException(
-          'N8N webhook no configurado',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-
-      const response = await axios.post(this.n8nWebhook, payload);
-
-      return {
-        success: true,
-        radicado,
-        pqrsId: saved.id,
-        n8n: response.data,
-      };
-    } catch (error) {
-      console.error('Error creando PQRS:', error);
+    if (!this.n8nWebhook) {
       throw new HttpException(
-        'Error creando PQRS',
+        'N8N webhook no configurado',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-  }
 
+    const response = await axios.post(this.n8nWebhook, payload);
+
+    return {
+      success: true,
+      radicado: radicadoOficial,
+      pqrsId: saved.id,
+      n8n: response.data,
+    };
+
+  } catch (error) {
+    console.error('Error creando PQRS:', error);
+    throw new HttpException(
+      'Error creando PQRS',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
   private getDiasPrometidos(tipo: string): number {
     const diasMap: Record<string, number> = {
       'Peticion': 5,
@@ -262,4 +267,31 @@ export class PQRSService {
   
   return pqrs;
 }
+
+async findByUsuario(usuarioId: string): Promise<PQRS[]> {
+  return await this.pqrsRepository.find({
+    where: { usuarioId },
+    order: {
+      id: 'DESC', // Muestra los más nuevos primero
+    },
+  });
+}
+
+  async findAll(): Promise<PQRS[]> {
+    return await this.pqrsRepository.find({
+      order: {
+        id: 'DESC',
+      },
+    });
+  }
+
+
+  async delete(id: number) {
+    const pqrs = await this.pqrsRepository.findOne({ where: { id } });
+    if (!pqrs) {
+      throw new NotFoundException(`El PQRS con ID #:${id} no existe.`);
+    }
+    await this.pqrsRepository.remove(pqrs);
+    return { success: true, message: `PQRS eliminado correctamente.` };
+  }
 }

@@ -53,11 +53,18 @@ export class PQRS {
   supervisorId?: string; 
 
   @Column({ type: 'simple-array', nullable: true })
-  fotos?: string[];  // 👈 Almacena URLs de las fotos
+  fotos?: string[]; 
 
-  @CreateDateColumn()
+  @CreateDateColumn({ 
+    type: 'timestamp', 
+    default: () => 'CURRENT_TIMESTAMP' 
+  })
   createdAt?: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ 
+    type: 'timestamp', 
+    default: () => 'CURRENT_TIMESTAMP', 
+    onUpdate: 'CURRENT_TIMESTAMP' 
+  })
   updatedAt?: Date;
 }
