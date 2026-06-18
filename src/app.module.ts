@@ -10,7 +10,6 @@ import { BusesModule } from './buses/buses.module';
 import { TurnosModule } from './turnos/turnos.module';
 import { ConductoresModule } from './conductores/conductores.module';
 import { ScheduleModule } from '@nestjs/schedule';
-
 import { RecargasModule } from './recargas/recargas.module';
 import { CiudadanosModule } from './ciudadanos/ciudadanos.module';
 import { MetodosPagoModule } from './metodos-pago/metodos-pago.module';
@@ -22,7 +21,6 @@ import { ProgramacionesRutaModule } from './programaciones-ruta/programaciones-r
 import { BoletosModule } from './boletos/boletos.module';
 import { HistorialModule } from './historial/historial.module';
 import { ReportesModule } from './reportes/reportes.module';
-
 import { IncidentesModule } from './incidentes/incidentes.module';
 import { GpsModule } from './gps/gps.module';
 import { EmpresasModule } from './empresas/empresas.module';
@@ -33,6 +31,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { CitasModule } from './citas/citas.module';
 import { PqrsModule } from './pqrs/pqrs.module';
 import { AlertasModule } from './alertas/alertas.module';
+import { MensajePrivadoModule } from './mensaje-privado/mensaje.module';
+import { ClimaModule } from './clima/clima.module';
+
 @Module({
   providers: [{ provide: APP_GUARD, useClass: SecurityGuard }],
   imports: [
@@ -48,18 +49,17 @@ import { AlertasModule } from './alertas/alertas.module';
         password: configService.get<string>('DB_PASS'),
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Usaremos migraciones
+        synchronize: false,
       }),
     }),
     ProgramacionesRutaModule,
-    ScheduleModule.forRoot(), // ← añadir aquí
+    ScheduleModule.forRoot(),
     RutasModule,
     NodosModule,
     ParaderoModule,
     BusesModule,
     TurnosModule,
     ConductoresModule,
-   
     CiudadanosModule,
     MetodosPagoModule,
     MetodosPagoCiudadanoModule,
@@ -75,11 +75,13 @@ import { AlertasModule } from './alertas/alertas.module';
     EmpresasModule,
     GruposModule,
     MensajesModule,
+    AlertasModule,
+    MensajePrivadoModule,
+    ClimaModule,
     MonitoreoModule,
     DashboardModule,
     CitasModule,
     PqrsModule,
-    AlertasModule,
   ],
 })
 export class AppModule {}

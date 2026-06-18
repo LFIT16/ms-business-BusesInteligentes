@@ -17,22 +17,27 @@ export class SecurityGuard implements CanActivate {
     const { headers, method } = request;
     const cleanUrl = request.path || request.url.split('?')[0];
 
+    let normalizedUrl = cleanUrl;
+
+    normalizedUrl = normalizedUrl.replace(/PQRS-\d{4}-\d{6}/g, '?');
+    normalizedUrl = normalizedUrl.replace(/[0-9a-fA-F]{24}/g, '?');
+    normalizedUrl = normalizedUrl.replace(/\d+/g, '?');
+
     const publicRoutes = [
       '/api/recargas/epayco/confirmacion',
       '/api/recargas/epayco/respuesta',
-      '/api/citas/cancelar'
+      '/api/citas/cancelar',
+      '/api/clima/verificar'
     ];
 
-    const isPublicRoute =
-      publicRoutes.some(route =>
-        cleanUrl.startsWith(route)
-      );
+    const isPublicRoute = 
+      publicRoutes.some(route => cleanUrl.startsWith(route)) || 
+      (method === 'GET' && cleanUrl.startsWith('/api/pqrs/PQRS-'))
 
     if (isPublicRoute) {
       return true;
     }
 
-    // ── Bypass para microservicios internos ───────────────────────────────
     const internalKey = headers['x-internal-api-key'];
     if (internalKey) {
       if (internalKey === process.env.INTERNAL_API_KEY) {
@@ -40,16 +45,16 @@ export class SecurityGuard implements CanActivate {
       }
       throw new UnauthorizedException('API key interna inválida');
     }
-    // ─────────────────────────────────────────────────────────────────────
 
     if (!headers.authorization) {
       throw new UnauthorizedException('Token de autorización faltante');
+
     }
 
     const token = headers.authorization.replace('Bearer ', '');
 
     const permissionData = {
-      url: cleanUrl,
+      url: normalizedUrl,
       method,
     };
 
@@ -62,12 +67,14 @@ export class SecurityGuard implements CanActivate {
         },
       });
 
+
       if (response.data === true) {
         return true;
       }
 
       throw new ForbiddenException('No autorizado para acceder a este recurso');
     } catch (error: any) {
+
       this.logger.error(`Error al validar permisos: ${error.message}`);
 
       if (error instanceof ForbiddenException) throw error;

@@ -37,9 +37,34 @@ export class PQRS {
   })
   estado?: EstadoPQRS;
 
-  @CreateDateColumn()
+  @Column({ type: 'varchar', length: 1000, nullable: true })
+  respuesta?: string;
+
+  @Column({ type: 'datetime', nullable: true })
+  fechaLimite?: Date;
+
+  @Column({ type: 'int', default: 0 })
+  diasPrometidos?: number;
+
+  @Column({ type: 'boolean', default: false })
+  alertaEnviada?: boolean;
+
+  @Column({ nullable: true })
+  supervisorId?: string; 
+
+  @Column({ type: 'simple-array', nullable: true })
+  fotos?: string[]; 
+
+  @CreateDateColumn({ 
+    type: 'timestamp', 
+    default: () => 'CURRENT_TIMESTAMP' 
+  })
   createdAt?: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ 
+    type: 'timestamp', 
+    default: () => 'CURRENT_TIMESTAMP', 
+    onUpdate: 'CURRENT_TIMESTAMP' 
+  })
   updatedAt?: Date;
 }
